@@ -15,6 +15,9 @@ Encode Non-ASCII String To Bytes Using Incompatible Encoding
 Encode Non-ASCII String To Bytes Using Incompatible Encoding And Error Handler
     Check Test Case    ${TESTNAME}
 
+Encode bytes
+    Check Test Case    ${TESTNAME}
+
 Decode ASCII Bytes To String
     Check Test Case    ${TESTNAME}
 
@@ -27,10 +30,5 @@ Decode Non-ASCII Bytes To String Using Incompatible Encoding
 Decode Non-ASCII Bytes To String Using Incompatible Encoding And Error Handler
     Check Test Case    ${TESTNAME}
 
-Decode String on Python 2 Works
-    [Tags]   require-py2
-    Check Test Case    ${TESTNAME}
-
-Decode String on Python 3 Fails
-    [Tags]   require-py3
+Decode string
     Check Test Case    ${TESTNAME}

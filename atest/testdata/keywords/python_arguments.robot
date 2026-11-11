@@ -62,13 +62,13 @@ Too Many Arguments With Defaults 2
 
 Correct Number Of Arguments With Varargs
     ${ret} =    A 0 N
-    Should Be Equal    ${ret}    a_0_n: \
+    Should Be Equal    ${ret}    a_0_n:
     ${ret} =    A 0 N    My arg
     Should Be Equal    ${ret}    a_0_n: My arg
     ${ret} =    A 0 N    1    2    3    4
     Should Be Equal    ${ret}    a_0_n: 1 2 3 4
     ${ret} =    A 1 N    Required arg
-    Should Be Equal    ${ret}    a_1_n: Required arg \
+    Should Be Equal    ${ret}    a_1_n: Required arg
     ${ret} =    A 1 N    1 (req)    2    3    4    5
     ...    6    7    8    9
     Should Be Equal    ${ret}    a_1_n: 1 (req) 2 3 4 5 6 7 8 9
@@ -79,7 +79,7 @@ Too Few Arguments With Varargs
 
 Correct Number Of Arguments With Defaults And Varargs
     ${ret} =    A 1 2 N    Required arg
-    Should Be Equal    ${ret}    a_1_2_n: Required arg default \
+    Should Be Equal    ${ret}    a_1_2_n: Required arg default
     ${ret} =    A 1 2 N    one (req)    two    three    four
     Should Be Equal    ${ret}    a_1_2_n: one (req) two three four
 
@@ -111,14 +111,7 @@ Dummy decorator does not preserve arguments 2
     [Documentation]    FAIL STARTS: TypeError:
     Keyword using decorator    argument    mismatch    is    not    detected
 
-Decorator using functools.wraps does not preserve arguments on Python 2
-    [Documentation]    FAIL STARTS: TypeError:
-    [Tags]    require-py2
-    Keyword using decorator with wraps    foo    bar    zap
-    Keyword using decorator with wraps    argument    mismatch    is    not    detected
-
-Decorator using functools.wraps preserves arguments on Python 3
+Decorator using functools.wraps preserves arguments
     [Documentation]    FAIL Keyword 'Decorators.Keyword Using Decorator With Wraps' expected 2 to 3 arguments, got 4.
-    [Tags]    require-py3
     Keyword using decorator with wraps    foo    bar    zap
     Keyword using decorator with wraps    argument    mismatch    is    detected

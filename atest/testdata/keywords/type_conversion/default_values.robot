@@ -5,26 +5,72 @@ Resource                 conversion.resource
 *** Variables ***
 @{LIST}                  foo                       bar
 &{DICT}                  foo=${1}                  bar=${2}
+${PATH}                  ${{pathlib.Path('x/y')}}
+${PUREPATH}              ${{pathlib.PurePath('x/y')}}
 
 *** Test Cases ***
 Integer
-    Integer              42                        ${42}
-    Integer              -1                        ${-1}
-    Integer              9999999999999999999999    ${9999999999999999999999}
+    Integer              42                        42
+    Integer              -1                        -1
+    Integer              9999999999999999999999    9999999999999999999999
+    Integer              123 456 789               123456789
+    Integer              123_456_789               123456789
+    Integer              - 123 456 789             -123456789
+    Integer              -_123_456_789             -123456789
 
 Integer as float
-    Integer              1.0                       ${1.0}
-    Integer              1.5                       ${1.5}
+    Integer              1.0                       1
+    Integer              1.5                       1.5
+
+Integer as hex
+    Integer              0x0                        0
+    Integer              0 X 0 0 0 0 0              0
+    Integer              0_X_0_0_0_0_0              0
+    Integer              0x1000                     4096
+    Integer              -0x1000                    -4096
+    Integer              +0x1000                    4096
+    Integer              0x00FF                     255
+    Integer              - 0 X 00 ff                -255
+    Integer              -__0__X__00_ff__           -255
+    Integer              0 x BAD C0FFEE             50159747054
+
+Integer as octal
+    Integer              0o0                        0
+    Integer              0 O 0 0 0 0 0              0
+    Integer              0_O_0_0_0_0_0              0
+    Integer              0o1000                     512
+    Integer              -0o1000                    -512
+    Integer              +0o1000                    512
+    Integer              0o0077                     63
+    Integer              - 0 o 00 77                -63
+    Integer              -__0__o__00_77__           -63
+
+Integer as binary
+    Integer              0b0                        0
+    Integer              0 B 0 0 0 0 0              0
+    Integer              0_B_0_0_0_0_0              0
+    Integer              0b1000                     8
+    Integer              -0b1000                    -8
+    Integer              +0b1000                    8
+    Integer              0b0011                     3
+    Integer              - 0 b 00 11                -3
+    Integer              -__0__b__00_11__           -3
 
 Invalid integer
     [Template]           Invalid value is passed as-is
     Integer              foobar
+    Integer              0xFOOBAR
+    Integer              0o8
+    Integer              0b2
+    Integer              00b1
+    Integer              0x0x0
 
 Float
-    Float                1.5                       ${1.5}
-    Float                -1                        ${-1.0}
-    Float                1e6                       ${1000000.0}
-    Float                -1.2e-3                   ${-0.0012}
+    Float                1.5                       1.5
+    Float                -1                        -1.0
+    Float                1e6                       1000000.0
+    Float                1 000 000 . 0_0_1         1000000.001
+    Float                -1.2e-3                   -0.0012
 
 Invalid float
     [Template]           Invalid value is passed as-is
@@ -34,25 +80,26 @@ Decimal
     Decimal              3.14                      Decimal('3.14')
     Decimal              -1                        Decimal('-1')
     Decimal              1e6                       Decimal('1000000')
+    Decimal              1 000 000 . 0_0_1         Decimal('1000000.001')
 
 Invalid decimal
     [Template]           Invalid value is passed as-is
     Decimal              foobar
 
 Boolean
-    Boolean              True                      ${True}
-    Boolean              YES                       ${True}
-    Boolean              on                        ${True}
-    Boolean              1                         ${True}
-    Boolean              false                     ${False}
-    Boolean              No                        ${False}
-    Boolean              oFF                       ${False}
-    Boolean              0                         ${False}
-    Boolean              ${EMPTY}                  ${False}
-    Boolean              none                      ${None}
-    Boolean              ${None}                   ${None}
-    Boolean              ${0}                      ${0}
-    Boolean              ${1.1}                    ${1.1}
+    Boolean              True                      True
+    Boolean              YES                       True
+    Boolean              on                        True
+    Boolean              1                         True
+    Boolean              false                     False
+    Boolean              No                        False
+    Boolean              oFF                       False
+    Boolean              0                         False
+    Boolean              ${EMPTY}                  False
+    Boolean              none                      None
+    Boolean              ${None}                   None
+    Boolean              ${0}                      0
+    Boolean              ${1.1}                    1.1
 
 Invalid boolean
     [Template]           Invalid value is passed as-is
@@ -60,25 +107,16 @@ Invalid boolean
     Boolean              ${LIST}                   expected=${LIST}
 
 String
-    String               Hello, world!             u'Hello, world!'
-    String               åäö                       u'åäö'
-    String               None                      u'None'
-    String               True                      u'True'
-    String               []                        u'[]'
+    String               Hello, world!             'Hello, world!'
+    String               åäö                       'åäö'
+    String               None                      'None'
+    String               True                      'True'
+    String               []                        '[]'
     String               ${42}                     42
     String               ${None}                   None
     String               ${LIST}                   ['foo', 'bar']
-    Unicode              Hello, world!             u'Hello, world!'
-    Unicode              åäö                       u'åäö'
-    Unicode              None                      u'None'
-    Unicode              True                      u'True'
-    Unicode              []                        u'[]'
-    Unicode              ${42}                     42
-    Unicode              ${None}                   None
-    Unicode              ${LIST}                   ['foo', 'bar']
 
 Bytes
-    [Tags]               require-py3
     Bytes                foo                       b'foo'
     Bytes                \x00\x01\xFF\u00FF        b'\\x00\\x01\\xFF\\xFF'
     Bytes                Hyvä esimerkki!           b'Hyv\\xE4 esimerkki!'
@@ -86,7 +124,6 @@ Bytes
     Bytes                NONE                      b'NONE'
 
 Invalid bytes
-    [Tags]               require-py3
     [Template]           Invalid value is passed as-is
     Bytes                \u0100
 
@@ -139,32 +176,64 @@ Invalid timedelta
     Timedelta            foobar
     Timedelta            01:02:03:04
 
+Path
+    Path                 path                      Path('path')
+    Path                 two/components            Path(r'two${/}components')
+    Path                 two${/}components         Path(r'two${/}components')
+    Path                 ${PATH}                   Path('x/y')
+    Path                 ${PUREPATH}               Path('x/y')
+    PurePath             path                      Path('path')
+    PurePath             two/components            Path(r'two${/}components')
+    PurePath             two${/}components         Path(r'two${/}components')
+    PurePath             ${PATH}                   Path('x/y')
+    PurePath             ${PUREPATH}               PurePath('x/y')
+
+Invalid Path
+    [Template]           Invalid value is passed as-is
+    Path                 ${1}                      ${1}
+
 Enum
-    [Tags]               require-enum
     Enum                 FOO                       MyEnum.FOO
     Enum                 bar                       MyEnum.bar
+
+Flag
+    Flag                 RED                       MyFlag.RED
+
+IntEnum
+    IntEnum              ON                        MyIntEnum.ON
+    IntEnum              ${1}                      MyIntEnum.ON
+    IntEnum              0                         MyIntEnum.OFF
+
+IntFlag
+    IntFlag              R                         MyIntFlag.R
+    IntFlag              4                         MyIntFlag.R
+    IntFlag              ${4}                      MyIntFlag.R
 
 Invalid enum
     [Template]           Invalid value is passed as-is
     Enum                 foobar
+    Flag                 YELLOW
+    IntEnum              -1
+    IntFlag              ${10}                     ${10}
 
 None
     None                 None                      None
     None                 NONE                      None
-    None                 Hello, world!             u'Hello, world!'
-    None                 True                      u'True'
-    None                 []                        u'[]'
+    None                 ${EMPTY}                  ''
+    None                 Hello, world!             'Hello, world!'
+    None                 True                      'True'
+    None                 []                        '[]'
 
 List
     List                 []                        []
     List                 ['foo', 'bar']            ${LIST}
     List                 [1, 2, 3.14, -42]         [1, 2, 3.14, -42]
-    List                 ['\\x00', '\\x52']        ['\\x00', 'R']
+    List                 ('\\x00', '\\x52')        ['\\x00', 'R']
+    List                 ${LIST}                   ${LIST}
 
 Invalid list
     [Template]           Invalid value is passed as-is
     List                 [1, ooops]
-    List                 ()
     List                 {}
     List                 ooops
     List                 ${EMPTY}
@@ -173,20 +242,21 @@ Invalid list
 
 Tuple
     Tuple                ()                        ()
-    Tuple                ('foo', "bar")            tuple(${LIST})
-    Tuple                (1, 2, 3.14, -42)         (1, 2, 3.14, -42)
+    Tuple                ('foo', 'bar')            ('foo', 'bar')
+    Tuple                [1, 2, 3.14, -42]         (1, 2, 3.14, -42)
+    Tuple                ${LIST}                   ('foo', 'bar')
 
 Invalid tuple
     [Template]           Invalid value is passed as-is
     Tuple                (1, ooops)
-    Tuple                []
     Tuple                {}
     Tuple                ooops
 
 Dictionary
     Dictionary           {}                        {}
-    Dictionary           {'foo': 1, "bar": 2}      dict(${DICT})
+    Dictionary           {'foo': 1, 'bar': 2}      {'foo': 1, 'bar': 2}
     Dictionary           {1: 2, 3.14: -42}         {1: 2, 3.14: -42}
+    Dictionary           ${DICT}                   ${DICT}
 
 Invalid dictionary
     [Template]           Invalid value is passed as-is
@@ -197,23 +267,21 @@ Invalid dictionary
     Dictionary           {{'not': 'hashable'}: 'xxx'}
 
 Set
-    [Tags]               require-py3
     Set                  set()                     set()
     Set                  {'foo', 'bar'}            {'foo', 'bar'}
     Set                  {1, 2, 3.14, -42}         {1, 2, 3.14, -42}
+    Set                  [1, 2, 3.14, -42]         {1, 2, 3.14, -42}
+    Set                  (1, 2, 3.14, -42)         {1, 2, 3.14, -42}
 
 Invalid set
     [Template]           Invalid value is passed as-is
     Set                  {1, ooops}
     Set                  {}
-    Set                  ()
-    Set                  []
     Set                  ooops
     Set                  {{'not', 'hashable'}}
     Set                  frozenset()
 
 Frozenset
-    [Tags]               require-py3
     Frozenset            set()                     frozenset()
     Frozenset            frozenset()               frozenset()
     Frozenset            {'foo', 'bar'}            frozenset({'foo', 'bar'})
@@ -226,47 +294,32 @@ Invalid frozenset
     Frozenset            ooops
     Frozenset            {{'not', 'hashable'}}
 
-Sets are not supported in Python 2
-    [Tags]               require-py2
-    Set                  set()                     u'set()'
-    Set                  {'foo', 'bar'}            u"{'foo', 'bar'}"
-    Frozenset            set()                     u'set()'
-    Frozenset            frozenset()               u'frozenset()'
-    Frozenset            {'foo', 'bar'}            u"{'foo', 'bar'}"
-
 Unknown types are not converted
-    Unknown              foo                       u'foo'
-    Unknown              1                         u'1'
-    Unknown              true                      u'true'
-    Unknown              None                      u'None'
-    Unknown              none                      u'none'
-    Unknown              []                        u'[]'
+    Unknown              foo                       'foo'
+    Unknown              1                         '1'
+    Unknown              true                      'true'
+    Unknown              None                      'None'
+    Unknown              none                      'none'
+    Unknown              []                        '[]'
 
 Positional as named
     Integer              argument=-1               expected=-1
     Float                argument=1e2              expected=100.0
     Dictionary           argument={'a': 1}         expected={'a': 1}
 
-Invalid positional as named
-    Integer              argument=1.0              expected=1.0
-    Float                argument=xxx              expected=u'xxx'
-    Dictionary           argument=[0]              expected=u'[0]'
-
 Kwonly
-    [Tags]               require-py3
     Kwonly               argument=1.0              expected=1.0
 
 Invalid kwonly
-    [Tags]               require-py3
     Kwonly               argument=foobar           expected='foobar'
 
 @keyword decorator overrides default values
     Types via keyword deco override            42    timedelta(seconds=42)
-    None as types via @keyword disables        42    u'42'
+    None as types via @keyword disables        42    '42'
     Empty types via @keyword doesn't override  42    42
     @keyword without types doesn't override    42    42
 
 *** Keywords ***
 Invalid value is passed as-is
-    [Arguments]    ${kw}    ${arg}    ${expected}=u'''${arg}'''
+    [Arguments]    ${kw}    ${arg}    ${expected}='''${arg}'''
     Run Keyword    ${kw}    ${arg}    ${expected}

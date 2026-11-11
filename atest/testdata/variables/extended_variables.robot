@@ -1,6 +1,5 @@
 *** Settings ***
 Variables         extended_variables.py
-Library           ExampleJavaLibrary
 
 *** Variables ***
 ${X}              X
@@ -34,33 +33,6 @@ Multiply
     Should Be Equal    ${3 * 42}    ${126}
     Should Be Equal    ${3 * 2.0}    ${6}
     Log Many    Having float first fails    ${3.0 * 2}
-
-Using Public Java Attribute
-    ${javaobj} =    Get Java Object    Robot Framework
-    Should Be Equal    ${javaobj.publicString}    Robot Framework
-    Should Be Equal    ${javaobj.publicInt}    ${42}
-
-Using Java Attribute With Bean Properties
-    ${javaobj} =    Get Java Object    Robot
-    Should Be Equal    ${javaobj.name}    Robot
-
-Calling Java Method
-    ${javaobj} =    Get Java Object    Robot
-    Should Be Equal    ${javaobj.setName('New')}    ${null}
-    Should Be Equal    ${javaobj.getName()}    New
-    Should Be Equal    ${javaobj.publicString}    Robot
-
-Accessing Java Lists and Maps
-    ${array} =    Get Array Of Three Ints
-    Should Be Equal    ${array[2]}    ${42}
-    ${array} =    Get String Array    foo    bar
-    Should Be Equal    ${array[-1]}    bar
-    ${ht} =    Get Hashtable
-    Should Be Equal    ${ht.put('key', 'value')}    ${null}
-    Should Be Equal    ${ht['key']}    value
-    ${list} =    Get Linked List    one    two
-    Should Be Equal    ${list[0]}    one
-    Should Be Equal    ${list[1]}    two
 
 Failing When Base Name Does Not Exist
     [Documentation]    FAIL Resolving variable '\${nonexisting.whatever}' failed: Variable '\${nonexisting}' not found.
@@ -107,13 +79,13 @@ Escape characters and curly braces
     ${X + '\${Y}'}            X\${Y}
     ${X + '\\${Y}'}           X\\Y
     ${X + '$\{Y\}'}           X\${Y}
-    ${X + '\$\{Y\}'}          X\\\${Y}
+    ${X + '\\$\{Y\}'}         X\\\${Y}
     ${X + '\\'}               X\\
     ${X + '\}'}               X}
     ${X + '\{'}               X{
     ${X + '{}'}               X{}
     ${X + {'k': 'v'}['k']}    Xv
-    ${X + __import__('re').match('(\d{2})${Y}\\s{2}', '1${2}Y\t\r').group(${1})}
+    ${X + __import__('re').match(r'(\d{2})${Y}\s{2}', '1${2}Y\t\r').group(${1})}
     ...                       X12
 
 Failing When Attribute Does Not exists 1
@@ -144,13 +116,3 @@ Fail When Accessing Item Not In Dictionary
 Failing For Syntax Error
     [Documentation]    FAIL STARTS: Resolving variable '\${OBJ.greet('no end quote)}' failed: SyntaxError:
     Log    ${OBJ.greet('no end quote)}
-
-Failing When Java Attribute Does Not Exist
-    [Documentation]    FAIL STARTS: Resolving variable '\${javaobj.nonExisting}' failed: AttributeError:
-    ${javaobj} =    Get Java Object    My Name
-    Log    ${javaobj.nonExisting}
-
-Failing When Java Method Throws Exception
-    [Documentation]    FAIL STARTS: Resolving variable '\${javaobj.exception()}' failed: IllegalArgumentException:
-    ${javaobj} =    Get Java Object    My Name
-    Log    ${javaobj.exception()}

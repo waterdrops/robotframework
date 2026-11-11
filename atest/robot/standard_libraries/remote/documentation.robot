@@ -14,7 +14,6 @@ Multi
     Short doc\nin two lines.    Short doc\nin two lines.\n\nDoc body\nin\nthree.    1
 
 Nön-ÄSCII
-    [Tags]    no-ipy
     Nön-ÄSCII documentation    Nön-ÄSCII documentation    2
 
 Intro documentation
@@ -46,6 +45,6 @@ Run Remote Tests And Libdoc
 Verify executed short doc and full Libdoc
     [Arguments]    ${short}    ${full}    ${index}
     ${tc} =    Check Test Case    ${TEST NAME}
-    Should Be Equal    ${tc.kws[0].doc}    ${short}
+    Should Be Equal    ${tc[0].doc}    ${short}
     Keyword Name Should Be    ${index}    ${TEST NAME}
     Keyword Doc Should Be     ${index}    ${full}

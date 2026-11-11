@@ -2,51 +2,68 @@ import json
 import os
 import pprint
 import shlex
-from os.path import abspath, dirname, exists, join, normpath, relpath
-from subprocess import run, PIPE, STDOUT
+from pathlib import Path
+from subprocess import PIPE, run, STDOUT
 
+try:
+    from jsonschema import Draft202012Validator as JSONValidator
+except ImportError:
+    JSONValidator = None
 from xmlschema import XMLSchema
 
 from robot.api import logger
-from robot.utils import CONSOLE_ENCODING, SYSTEM_ENCODING, unicode
-from robot.running.arguments import ArgInfo
+from robot.running.arguments import ArgInfo, TypeInfo
+from robot.utils import NOT_SET, SYSTEM_ENCODING
+
+ROOT = Path(__file__).absolute().parent.parent.parent.parent
 
 
-ROOT = join(dirname(abspath(__file__)), '..', '..', '..')
-
-
-class LibDocLib(object):
+class LibDocLib:
 
     def __init__(self, interpreter=None):
         self.interpreter = interpreter
-        self.schema = XMLSchema(join(ROOT, 'doc', 'schema', 'libdoc.03.xsd'))
+        self.xml_schema = XMLSchema(str(ROOT / "doc/schema/libdoc.xsd"))
+        self.json_schema = self._load_json_schema()
+
+    def _load_json_schema(self):
+        if not JSONValidator:
+            return None
+        with open(ROOT / "doc/schema/libdoc.json", encoding="UTF-8") as f:
+            return JSONValidator(json.load(f))
 
     @property
     def libdoc(self):
         return self.interpreter.libdoc
 
-    @property
-    def encoding(self):
-        return SYSTEM_ENCODING \
-                if not self.interpreter.is_ironpython else CONSOLE_ENCODING
-
     def run_libdoc(self, args):
         cmd = self.libdoc + self._split_args(args)
-        cmd[-1] = cmd[-1].replace('/', os.sep)
-        logger.info(' '.join(cmd))
-        result = run(cmd, cwd=join(ROOT, 'src'), stdout=PIPE, stderr=STDOUT,
-                     encoding=self.encoding, timeout=120, universal_newlines=True)
+        cmd[-1] = cmd[-1].replace("/", os.sep)
+        logger.info(" ".join(cmd))
+        if self.interpreter.version_info >= (3, 15):
+            encoding = "UTF-8"
+        else:
+            encoding = SYSTEM_ENCODING
+        result = run(
+            cmd,
+            cwd=ROOT / "src",
+            stdout=PIPE,
+            stderr=STDOUT,
+            encoding=encoding,
+            timeout=120,
+            text=True,
+            check=False,
+        )
         logger.info(result.stdout)
         return result.stdout
 
     def _split_args(self, args):
         lexer = shlex.shlex(args, posix=True)
-        lexer.escape = ''
+        lexer.escape = ""
         lexer.whitespace_split = True
         return list(lexer)
 
     def get_libdoc_model_from_html(self, path):
-        with open(path, encoding='UTF-8') as html_file:
+        with open(path, encoding="UTF-8") as html_file:
             model_string = self._find_model(html_file)
         model = json.loads(model_string)
         logger.info(pprint.pformat(model))
@@ -54,29 +71,49 @@ class LibDocLib(object):
 
     def _find_model(self, html_file):
         for line in html_file:
-            if line.startswith('libdoc = '):
-                return line.split('=', 1)[1].strip(' \n;')
-        raise RuntimeError('No model found from HTML')
+            if line.startswith("libdoc = "):
+                return line.split("=", 1)[1].strip(" \n;")
+        raise RuntimeError("No model found from HTML")
 
-    def validate_spec(self, path):
-        self.schema.validate(path)
+    def validate_xml_spec(self, path):
+        self.xml_schema.validate(path)
 
-    def relative_source(self, path, start):
-        if not exists(path):
-            return path
-        try:
-            return relpath(path, start)
-        except ValueError:
-            return normpath(path)
+    def validate_json_spec(self, path):
+        if not self.json_schema:
+            raise RuntimeError("jsonschema module is not installed!")
+        with open(path, encoding="UTF-8") as f:
+            self.json_schema.validate(json.load(f))
 
     def get_repr_from_arg_model(self, model):
-        return unicode(ArgInfo(kind=model['kind'],
-                               name=model['name'],
-                               types=tuple(model['type']),
-                               default=model['default'] or ArgInfo.NOTSET))
+        return str(
+            ArgInfo(
+                kind=model["kind"],
+                name=model["name"],
+                type=self._get_type_info(model["type"], model["alias"]),
+                default=self._get_default(model["default"]),
+            )
+        )
 
     def get_repr_from_json_arg_model(self, model):
-        return unicode(ArgInfo(kind=model['kind'],
-                               name=model['name'],
-                               types=tuple(model['types']),
-                               default=model['defaultValue'] or ArgInfo.NOTSET))
+        return str(
+            ArgInfo(
+                kind=model["kind"],
+                name=model["name"],
+                type=self._get_type_info(model["type"]),
+                default=self._get_default(model["defaultValue"]),
+            )
+        )
+
+    def _get_type_info(self, data, alias=None):
+        if not data:
+            return None
+        if isinstance(data, str):
+            info = TypeInfo.from_string(data)
+        else:
+            nested = [self._get_type_info(n) for n in data.get("nested", ())]
+            info = TypeInfo(data["name"], None, nested=nested or None)
+        info.alias = alias
+        return info
+
+    def _get_default(self, data):
+        return data if data is not None else NOT_SET

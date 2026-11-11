@@ -36,9 +36,9 @@ Many steps are automated using the generic `Invoke <http://pyinvoke.org>`_
 tool with a help by our `rellu <https://github.com/robotframework/rellu>`_
 utilities, but also other tools and modules are needed. A pre-condition is
 installing all these, and that's easiest done using `pip
-<http://pip-installer.org>`_ and the provided `<requirements-build.txt>`_ file::
+<http://pip-installer.org>`_ and the provided `<requirements-dev.txt>`_ file::
 
-    pip install -r requirements-build.txt
+    pip install -r requirements-dev.txt
 
 Using Invoke
 ~~~~~~~~~~~~
@@ -66,10 +66,17 @@ Testing
 Make sure that adequate tests are executed before releases are created.
 See `<atest/README.rst>`_ for details.
 
+If output.xml `schema <doc/schema/README.rst>`_ has changed, remember to
+run tests also with `full schema validation`__ enabled::
+
+    atest/run.py --schema-validation
+
+__ https://github.com/robotframework/robotframework/tree/master/atest#schema-validation
+
 Preparation
 -----------
 
-1. Check that you are on the master branch and have nothing left to commit,
+1. Check that you are on the right branch and have nothing left to commit,
    pull, or push::
 
       git branch
@@ -77,22 +84,27 @@ Preparation
       git pull --rebase
       git push
 
-2. Clean up::
+2. Make sure code is formatted properly::
+
+      invoke format
+      git status
+
+3. Clean up::
 
       invoke clean
 
-3. Set version information to a shell variable to ease copy-pasting further
+4. Set version information to a shell variable to ease copy-pasting further
    commands. Add ``aN``, ``bN`` or ``rcN`` postfix if creating a pre-release::
 
       VERSION=<version>
 
-   For example, ``VERSION=3.0.1`` or ``VERSION=3.1a2``.
+   For example, ``VERSION=7.1.1`` or ``VERSION=7.2a2``. No ``v`` prefix!
 
 Release notes
 -------------
 
-1. Create personal `GitHub access token`__ to be able to access issue tracker
-   programmatically. The token needs only the `repo/public_repo` scope.
+1. Create a personal `GitHub access token`__ to be able to access issue tracker
+   programmatically. The token needs only the ``repo/public_repo`` scope.
 
 2. Set GitHub user information into shell variables to ease running the
    ``invoke release-notes`` command in the next step::
@@ -112,7 +124,7 @@ Release notes
    <Set version_>`__. Omit the ``-w`` option if you just want to get release
    notes printed to the console, not written to a file.
 
-   When generating release notes for a preview release like ``3.0.2rc1``,
+   When generating release notes for a preview release like ``7.2rc1``,
    the list of issues is only going to contain issues with that label
    (e.g. ``rc1``) or with a label of an earlier preview release (e.g.
    ``alpha1``, ``beta2``).
@@ -132,7 +144,7 @@ Release notes
    issue tracker than in the generated release notes. This allows re-generating
    the list of issues later if more issues are added.
 
-6. Add, commit and push::
+6. Commit and push changes::
 
       git add doc/releasenotes/rf-$VERSION.rst
       git commit -m "Release notes for $VERSION" doc/releasenotes/rf-$VERSION.rst
@@ -144,17 +156,32 @@ Release notes
 
 __ https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token
 
+Update Libdoc templates
+-----------------------
+
+1. Prerequisites are listed in `<src/web/README.md>`_. This step can be skipped
+   if there are no changes to Libdoc.
+
+2. Regenerate HTML template and update the list of supported localizations in
+   the ``--help`` text::
+
+      invoke build-libdoc
+
+3. Commit and push changes::
+
+      git commit -m "Update Libdoc templates" src/robot/htmldata/libdoc/libdoc.html src/robot/libdocpkg/languages.py
+      git push
+
 Set version
 -----------
 
-1. Set version information in `<src/robot/version.py>`_, `<setup.py>`_ and
-   `<pom.xml>`_::
+1. Set version information in `<src/robot/version.py>`_ and `<setup.py>`_::
 
       invoke set-version $VERSION
 
 2. Commit and push changes::
 
-      git commit -m "Updated version to $VERSION" src/robot/version.py setup.py pom.xml
+      git commit -m "Updated version to $VERSION" src/robot/version.py setup.py
       git push
 
 Tagging
@@ -183,78 +210,32 @@ Creating distributions
 
       invoke clean
 
-3. Create and validate source distribution in zip format and universal (i.e.
-   Python 2 and 3 compatible) `wheel <http://pythonwheels.com>`_::
+4. Create and validate source distribution and `wheel <https://pythonwheels.com>`_::
 
-      python setup.py sdist --formats zip bdist_wheel --universal
+      python setup.py sdist bdist_wheel
       ls -l dist
       twine check dist/*
 
    Distributions can be tested locally if needed.
 
-4. Upload distributions to PyPI::
+5. Upload distributions to PyPI::
 
       twine upload dist/*
 
-5. Verify that project pages at `PyPI
+6. Verify that project pages at `PyPI
    <https://pypi.python.org/pypi/robotframework>`_ look good.
 
-6. Test installation::
+7. Test installation::
 
       pip install --pre --upgrade robotframework
 
-7. JAR distribution
+8. Documentation
 
-   - Create::
-
-       invoke jar
-
-   - Test that JAR is not totally broken::
-
-       java -jar dist/robotframework-$VERSION.jar --version
-       java -jar dist/robotframework-$VERSION.jar atest/testdata/misc/pass_and_fail.robot
-
-   - To create a JAR with a custom name for testing::
-
-       invoke jar --jar-name=example
-       java -jar dist/example.jar --version
-
-8. Upload JAR to Sonatype
-
-   - Sonatype offers a service where users can upload JARs and they will be synced
-     to the maven central repository. Below are the instructions to upload the JAR.
-
-   - Prequisites:
-
-      - Install maven
-      - Create a `Sonatype account`__
-      - Add these lines (filled with the Sonatype account information) to your ``settings.xml``::
-
-            <servers>
-                <server>
-                    <id>sonatype-nexus-staging</id>
-                    <username></username>
-                    <password></password>
-                </server>
-            </servers>
-
-      - Create `a PGP key`__
-      - Apply for `publish rights`__ to org.robotframework project. This will
-        take some time from them to accept.
-
-
-   - Run command::
-
-        mvn gpg:sign-and-deploy-file -Dfile=dist/robotframework-$VERSION.jar -DpomFile=pom.xml -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2/ -DrepositoryId=sonatype-nexus-staging
-
-   - Go to https://oss.sonatype.org/index.html#welcome, log in with Sonatype credentials, find the staging repository and do close & release
-   - After that, the released JAR is synced to Maven central within an hour.
-
-__ https://issues.sonatype.org/secure/Dashboard.jspa
-__ https://central.sonatype.org/pages/working-with-pgp-signatures.html
-__ https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
-
-9. Documentation
+   - For a reproducible build, set the ``SOURCE_DATE_EPOCH``
+     environment variable to a constant value, corresponding to the
+     date in seconds since the Epoch (also known as Epoch time).  For
+     more information regarding this environment variable, see
+     https://reproducible-builds.org/docs/source-date-epoch/.
 
    - Generate library documentation::
 
@@ -268,19 +249,19 @@ __ https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Us
 
         git checkout gh-pages
         invoke add-docs $VERSION --push
-        git checkout master
+        git checkout master    # replace master with v*-maintenance if needed!
 
 Post actions
 ------------
 
 1. Back to master if needed::
 
-      git checkout master
+      git checkout master    # replace master with v*-maintenance if needed!
 
 2. Set dev version based on the previous version::
 
       invoke set-version dev
-      git commit -m "Back to dev version" src/robot/version.py setup.py pom.xml
+      git commit -m "Back to dev version" src/robot/version.py setup.py
       git push
 
    For example, ``1.2.3`` is changed to ``1.2.4.dev1`` and ``2.0.1a1``
@@ -295,28 +276,12 @@ Post actions
 Announcements
 -------------
 
-1. `robotframework-users <https://groups.google.com/group/robotframework-users>`_
-   and
-   `robotframework-announce <https://groups.google.com/group/robotframework-announce>`_
-   lists. The latter is not needed with preview releases but should be used
-   at least with major updates. Notice that sending to it requires admin rights.
+1. ``#announcements`` channel on `Slack <https://slack.robotframework.org/>`_.
+   Use ``@channel`` at least with major releases.
 
-2. Twitter. Either Tweet something yourself and make sure it's re-tweeted
-   by `@robotframework <http://twitter.com/robotframework>`_, or send the
-   message directly as `@robotframework`. This makes the note appear also
-   at http://robotframework.org.
+2. `Forum <https://forum.robotframework.org/>`_.
 
-   Should include a link to more information. Possibly a link to the full
-   release notes or an email to the aforementioned mailing lists.
+3. `LinkedIn group <https://www.linkedin.com/groups/3710899/>`_. A personal
+   LinkedIn post is a good idea at least with bigger releases.
 
-3. ``#devel`` and ``#general`` channels on Slack.
-
-4. `Robot Framework LinkedIn
-   <https://www.linkedin.com/groups/3710899/>`_ group.
-
-5. Consider sending announcements, at least with major releases, also to other
-   forums where we want to make the framework more well known. For example:
-
-   - http://opensourcetesting.org
-   - http://tech.groups.yahoo.com/group/agile-testing
-   - http://lists.idyll.org/listinfo/testing-in-python
+4. `robotframework-users <https://groups.google.com/group/robotframework-users>`_

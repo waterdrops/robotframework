@@ -1,8 +1,10 @@
-*** Setting ***
-Suite Setup       Run Tests    ${EMPTY}    variables/automatic_variables/
+*** Settings ***
+Suite Setup       Run Tests
+...               --exclude exclude -e e2 --include include_this_test --skip skip_me --skip-on-failure sof -W 99
+...               variables/automatic_variables/
 Resource          atest_resource.robot
 
-*** Test Case ***
+*** Test Cases ***
 Previous Test Variables Should Have Default Values
     Check test case    ${TEST NAME}
 
@@ -13,11 +15,21 @@ Test Documentation
     ${tc} =    Check Test Case    ${TEST NAME}
     Should Be Equal    ${tc.doc}    My doc.\nIn 2 lines! And with variable value!!
 
+Test Metadata
+    ${tc} =    Check Test Case    ${TEST NAME}
+    Should Be Equal    ${tc.metadata}[TeSt1]    Value
+    Should Be Equal    ${tc.metadata}[test2]    variable value
+
+Modifying \&{TEST METADATA} does not affect actual metadata test has
+    ${tc} =    Check Test Case    ${TEST NAME}
+    Should Be Equal    ${tc.metadata}[TeSt1]    Value
+    Dictionary Should Not Contain Key    ${tc.metadata}    NotSet
+
 Test Tags
-    Check Test Tags    ${TEST NAME}    Force 1    Hello, world!    id-42    variable value
+    Check Test Tags    ${TEST NAME}    Force 1    Hello, world!    id-42    include this test    variable value
 
 Modifying \${TEST TAGS} does not affect actual tags test has
-    Check Test Tags    ${TEST NAME}    Force 1    mytag
+    Check Test Tags    ${TEST NAME}    Force 1    mytag    include this test
 
 Suite Name
     Check Test Case    ${TEST NAME}
@@ -67,3 +79,6 @@ Suite And Prev Test Variables Work Correctly In Setup
 Suite And Prev Test Variables Work Correctly In Teardown
     Should Be Equal    ${SUITE.suites[0].teardown.status}    PASS
     Should Be Equal    ${SUITE.suites[1].teardown.status}    PASS
+
+\&{OPTIONS}
+    Check Test Case    ${TEST NAME}

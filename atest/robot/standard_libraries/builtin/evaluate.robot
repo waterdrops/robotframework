@@ -9,6 +9,9 @@ Resource          atest_resource.robot
 Evaluate
     Check Test Case    ${TESTNAME}
 
+Custom additions to builtins are supported
+    Check Test Case    ${TESTNAME}
+
 Modules are imported automatically
     Check Test Case    ${TESTNAME}
 
@@ -28,13 +31,15 @@ Explicit modules
     Check Test Case    ${TESTNAME}
 
 Explicit modules are needed with nested modules
-    [Tags]    no-jython-2.7.1
     Check Test Case    ${TESTNAME}
 
 Explicit modules can override builtins
     Check Test Case    ${TESTNAME}
 
 Explicit modules used in lambda
+    Check Test Case    ${TESTNAME}
+
+Evaluation namespace is mutable
     Check Test Case    ${TESTNAME}
 
 Custom namespace
@@ -103,10 +108,16 @@ Invalid $ usage
 Evaluate Empty
     Check Test Case    ${TESTNAME}
 
-Evaluate Nonstring
+Evaluate Non-string
     Check Test Case    ${TESTNAME}
 
 Evaluate doesn't see module globals
+    Check Test Case    ${TESTNAME}
+
+Automatic variables are seen in expression part of comprehensions only with Python 3.12+
+    Check Test Case    ${TESTNAME}
+
+Automatic variables are not seen inside lambdas
     Check Test Case    ${TESTNAME}
 
 Evaluation errors can be caught

@@ -14,44 +14,22 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ 'ubuntu-latest', 'windows-latest' ]
-        python-version: [ '2.7', '3.5', '3.9' ]
-        exclude:
-          - os: windows-latest
-            python-version: 'pypy2'
-          - os: windows-latest
-            python-version: 'pypy3'
+        os: [ 'ubuntu-24.04', 'windows-latest' ]
+        python-version: [ '3.9', '3.14' ]
 
     runs-on: ${{ matrix.os }}
 
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: Setup python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: 'x64'
 
-      - name: Disable NTP on macOS (https://github.com/actions/virtual-environments/issues/820)
+      - name: Run unit tests
         run: |
-          sudo systemsetup -setusingnetworktime off
-          sudo rm -rf /etc/ntp.conf
-        if: runner.os == 'macOS'
-
-      - name: Run unit tests with coverage
-        run: |
-          python -m pip install coverage
           python -m pip install -r utest/requirements.txt
-          python -m coverage run --branch utest/run.py -v
-
-      - name: Prepare HTML/XML coverage report
-        run: |
-          python -m coverage xml -i
-        if: always()
-
-      - uses: codecov/codecov-action@1fc7722ded4708880a5aea49f2bfafb9336f0c8d
-        with:
-          name: ${{ matrix.python-version }}-${{ matrix.os }}
-        if: always()
+          python utest/run.py -v

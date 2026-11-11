@@ -1,3 +1,6 @@
+*** Settings ***
+Variables         list_variable_items.py
+
 *** Variables ***
 ${INT}            ${15}
 @{LIST}           A    B    C    D    E    F    G    H    I    J    K
@@ -102,13 +105,13 @@ Empty index string
 Empty index bytes
     [Documentation]    FAIL
     ...    ${BYTES NAME} '\$\{BYTES}' used with invalid index ''. \
-    ...     To use '[]' as a literal value, it needs to be escaped like '\\[]'.
+    ...    To use '[]' as a literal value, it needs to be escaped like '\\[]'.
     Log    ${BYTES}[]
 
 Invalid slice list
     [Documentation]    FAIL
     ...    List '\${LIST}' used with invalid index '1:2:3:4'. \
-    ...    To use  '[1:2:3:4]' as a literal value, it needs to be escaped like '\\[1:2:3:4]'.
+    ...    To use '[1:2:3:4]' as a literal value, it needs to be escaped like '\\[1:2:3:4]'.
     Log    ${LIST}[1:2:3:4]
 
 Invalid slice string
@@ -180,6 +183,23 @@ List expansion with slice fails if value is not list-like
     [Documentation]    FAIL Value of variable '\@{STRING}[1:]' is not list or list-like.
     Log Many    @{STRING}[1:]
 
+Object supporting both index and key access
+    Valid index              ${MIXED USAGE}
+    Index with variable      ${MIXED USAGE}
+    Slicing                  ${MIXED USAGE}
+    Slicing with variable    ${MIXED USAGE}
+    Should be equal          ${MIXED USAGE}[A]    ${0}
+    Should be equal          ${MIXED USAGE}[K]    ${10}
+    Run keyword and expect error
+    ...    EQUALS: MixedUsage '\${MIXED USAGE}' has no item in index 11.
+    ...    Log    ${MIXED USAGE}[11]
+    Run keyword and expect error
+    ...    STARTS: Accessing '\${MIXED USAGE}[X]' failed: ValueError:
+    ...    Log    ${MIXED USAGE}[X]
+    Run keyword and expect error
+    ...    EQUALS: MixedUsage '\${MIXED USAGE}' used with invalid index 'None'. To use '[None]' as a literal value, it needs to be escaped like '\\[None]'.
+    ...    Log    ${MIXED USAGE}[${NONE}]
+
 *** Keywords ***
 Valid index
     [Arguments]        ${sequence}
@@ -219,7 +239,7 @@ Slicing
 
 Slicing with variable
     [Arguments]        ${sequence}
-    Should Be Equal    ${sequence}[${1}:]        ${sequence[1:]}
-    Should Be Equal    ${sequence}[1${COLON}]    ${sequence[1:]}
+    Should Be Equal    ${sequence}[${1}:]            ${sequence[1:]}
+    Should Be Equal    ${sequence}[${{slice(1)}}]    ${sequence[:1]}
     Should Be Equal    ${sequence}[${1}${COLON}${EMPTY}${2}${0}${EMPTY}${0}]
-    ...                                          ${sequence[1:]}
+    ...                                              ${sequence[1:]}

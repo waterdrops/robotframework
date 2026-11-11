@@ -2,6 +2,7 @@
 Resource          libdoc_resource.robot
 Suite Setup       Run Libdoc And Parse Model From JSON    ${TESTDATADIR}/module.py
 Test Template     Should Be Equal Multiline
+Test Tags         require-jsonschema
 
 *** Test Cases ***
 Name
@@ -15,7 +16,7 @@ Version
 
 Generated
     [Template]    Should Match Regexp
-    ${MODEL}[generated]     \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}
+    ${MODEL}[generated]     \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}
 
 Scope
     ${MODEL}[scope]         GLOBAL
@@ -27,47 +28,57 @@ Inits
 Keyword Names
     ${MODEL}[keywords][0][name]     Get Hello
     ${MODEL}[keywords][1][name]     Keyword
-    ${MODEL}[keywords][14][name]    Set Name Using Robot Name Attribute
+    ${MODEL}[keywords][12][name]    Set Name Using Robot Name Attribute
 
 Keyword Arguments
     [Template]    Verify Argument Models
     ${MODEL}[keywords][0][args]
     ${MODEL}[keywords][1][args]     a1=d    *a2
-    ${MODEL}[keywords][6][args]     arg=hyv\\xe4
-    ${MODEL}[keywords][10][args]    arg=hyvä
-    ${MODEL}[keywords][12][args]    a=1    b=True    c=(1, 2, None)
-    ${MODEL}[keywords][13][args]    arg=\\ robot \\ escapers\\n\\t\\r \\ \\
-    ${MODEL}[keywords][14][args]    a    b    *args    **kwargs
+    ${MODEL}[keywords][6][args]     arg=hyvä
+    ${MODEL}[keywords][9][args]     arg=hyvä
+    ${MODEL}[keywords][10][args]    a=1    b=True    c=(1, 2, None)
+    ${MODEL}[keywords][11][args]    arg=\\ robot \\ escapers\\n\\t\\r \\ \\
+    ${MODEL}[keywords][12][args]    a    b    *args    **kwargs
 
 Embedded Arguments
     [Template]    NONE
-    Should Be Equal    ${MODEL}[keywords][15][name]    Takes \${embedded} \${args}
-    Should Be Empty    ${MODEL}[keywords][15][args]
+    Should Be Equal           ${MODEL}[keywords][13][name]    Takes \${embedded} \${args}
+    Should Be Empty           ${MODEL}[keywords][13][args]
+
+Embedded and Normal Arguments
+    [Template]    NONE
+    Should Be Equal           ${MODEL}[keywords][14][name]    Takes \${embedded} and normal args
+    Verify Argument Models    ${MODEL}[keywords][14][args]    mandatory    optional=None
+
+Embedded and Positional-only Arguments
+    [Template]    NONE
+    Should Be Equal           ${MODEL}[keywords][15][name]    Takes \${embedded} and positional-only args
+    Verify Argument Models    ${MODEL}[keywords][15][args]    mandatory    /    optional=None
 
 Keyword Documentation
     ${MODEL}[keywords][1][doc]
     ...    <p>A keyword.</p>
-    ...    <p>See <a href="#Get%20Hello" class="name">get hello</a> for details.</p>
+    ...    <p>See <a href="#Get%20Hello" title="&quot;Get Hello&quot; keyword" class="name">get hello</a> for details.</p>
     ${MODEL}[keywords][0][doc]
     ...    <p>Get hello.</p>
-    ...    <p>See <a href="#Importing" class="name">importing</a> for explanation of nothing and <a href="#Introduction" class="name">introduction</a> for no more information.</p>
+    ...    <p>See <a href="#Importing" title="&quot;Importing&quot; section" class="name">importing</a> for explanation of nothing and <a href="#Introduction" title="&quot;Introduction&quot; section" class="name">introduction</a> for no more information.</p>
     ${MODEL}[keywords][5][doc]
-    ...    <p>This is short doc. It can span multiple physical lines.</p>
+    ...    <p>This is short doc. It can span multiple physical lines and contain <b>formatting</b>.</p>
     ...    <p>This is body. It can naturally also contain multiple lines.</p>
     ...    <p>And paragraphs.</p>
 
 Non-ASCII Keyword Documentation
-    ${MODEL}[keywords][8][doc]     <p>Hyvää yötä.</p>
-    ${MODEL}[keywords][11][doc]    <p>Hyvää yötä.</p>\n<p>Спасибо!</p>
+    ${MODEL}[keywords][7][doc]    <p>Hyvää yötä.</p>\n<p>Спасибо!</p>
+    ${MODEL}[keywords][8][doc]    <p>Hyvää yötä.</p>
 
 Keyword Short Doc
-    ${MODEL}[keywords][1][shortdoc]     A keyword.
-    ${MODEL}[keywords][0][shortdoc]     Get hello.
-    ${MODEL}[keywords][8][shortdoc]     Hyvää yötä.
-    ${MODEL}[keywords][11][shortdoc]    Hyvää yötä.
+    ${MODEL}[keywords][0][shortdoc]    Get hello.
+    ${MODEL}[keywords][1][shortdoc]    A keyword.
+    ${MODEL}[keywords][7][shortdoc]    Hyvää yötä.
+    ${MODEL}[keywords][8][shortdoc]    Hyvää yötä.
 
 Keyword Short Doc Spanning Multiple Physical Lines
-    ${MODEL}[keywords][5][shortdoc]    This is short doc. It can span multiple physical lines.
+    ${MODEL}[keywords][5][shortdoc]    This is short doc. It can span multiple physical lines and contain *formatting*.
 
 Keyword tags
     [Template]    Should Be Equal As Strings
@@ -85,10 +96,10 @@ User keyword documentation formatting
     ...    <p>Hyvää yötä.</p>
     ...    <p>Спасибо!</p>
     ${MODEL}[keywords][8][doc]
-    ...    <p>foo bar <a href="#kw" class="name">kw</a>.</p>
+    ...    <p>foo bar <a href="#kw" title="&quot;kw&quot; keyword" class="name">kw</a>.</p>
     ...    <p>FIRST <span class="name">\${a1}</span> alskdj alskdjlajd askf laskdjf asldkfj alsdkfj alsdkfjasldkfj END</p>
     ...    <p>SECOND askf laskdjf <i>asldkfj</i> alsdkfj alsdkfjasldkfj askf <b>laskdjf</b> END</p>
-    ...    <p>THIRD asldkfj <a href="#Introduction" class="name">introduction</a> alsdkfj <a href="http://foo.bar">http://foo.bar</a> END</p>
+    ...    <p>THIRD asldkfj <a href="#Introduction" title="&quot;Introduction&quot; section" class="name">introduction</a> alsdkfj <a href="http://foo.bar">http://foo.bar</a> END</p>
     ...    <ul>
     ...    <li>aaa</li>
     ...    <li>bbb</li>
@@ -104,11 +115,27 @@ User keyword documentation formatting
     ...    <td>bar</td>
     ...    </tr>
     ...    </table>
+    ...    <p>Tags not only on the last line is new in RF 7.5.</p>
+
+Private user keyword should be included
+    [Setup]    Run Libdoc And Parse Model From JSON    ${TESTDATADIR}/resource.robot
+    ${MODEL}[keywords][-2][name]                 Private
+    ${MODEL}[keywords][-2][tags]                 ['common', 'robot:private', 'tag-in-private', 'tags']
+    ${MODEL}[keywords][-2][private]              True
+    ${MODEL['keywords'][0].get('private')}       None
+
+Deprecation
+    [Setup]    Run Libdoc And Parse Model From JSON    ${TESTDATADIR}/Deprecation.py
+    ${MODEL}[keywords][0][deprecated]            True
+    ${MODEL}[keywords][1][deprecated]            True
+    ${MODEL['keywords'][2].get('deprecated')}    None
+    ${MODEL['keywords'][3].get('deprecated')}    None
 
 *** Keywords ***
 Verify Argument Models
     [Arguments]    ${arg_models}    @{expected_reprs}
-    Should Be True    len($arg_models) == len($expected_reprs)
+    [Tags]    robot: continue-on-failure
+    Should Be True    len(${arg_models}) == len(${expected_reprs})
     FOR    ${arg_model}    ${expected_repr}    IN ZIP    ${arg_models}    ${expected_reprs}
-       Run Keyword And Continue On Failure    Verify Argument Model    ${arg_model}    ${expected_repr}    json=True
+        Verify Argument Model    ${arg_model}    ${expected_repr}    json=True
     END

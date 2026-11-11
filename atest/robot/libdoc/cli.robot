@@ -5,37 +5,75 @@ Test Template    Run Libdoc And Verify Created Output File
 *** Test Cases ***
 Default format is got from output file extension
     String ${OUTHTML}            HTML         String
-    String ${OUTXML}             XML          String    path=${OUTXML}
+    String ${OUTXML}             XML          String    path=${OUTXML}    docformat=MARKDOWN
+    String ${OUTMARKDOWN}        MARKDOWN     String    path=${OUTMARKDOWN}
 
 '*.libspec' extension creates XML file with HTML docs
     String ${OUTBASE}.libspec    LIBSPEC     String    path=${OUTBASE}.libspec
 
 Using --format overrides output file extension
-    -f XmL ${TESTDATADIR}/resource.robot ${OUTHTML}       XML         resource
+    -f XmL ${TESTDATADIR}/resource.resource ${OUTHTML}    XML         resource
     --format hTmL BuiltIn ${OUTBASE}.xxx                  HTML        BuiltIn     path=${OUTBASE}.xxx
-    --format XML String ${OUTBASE}.libspec                XML         String      path=${OUTBASE}.libspec
+    --format XML String ${OUTBASE}.libspec                XML         String      path=${OUTBASE}.libspec    docformat=MARKDOWN
+    --format MARKDOWN String ${OUTBASE}.xxx               MARKDOWN    String      path=${OUTBASE}.xxx
 
 Using --specdocformat to specify doc format in output
-    --format XML --specdocformat RAW String ${OUTXML}              XML        String      path=${OUTXML}
+    --format XML --specdocformat RAW String ${OUTXML}              XML        String      path=${OUTXML}    docformat=MARKDOWN
     --format XML --specdocformat HTML String ${OUTXML}             LIBSPEC    String      path=${OUTXML}
-    --format XML --specdocformat RAW String ${OUTBASE}.libspec     XML        String      path=${OUTBASE}.libspec
+    --format XML --specdocformat RAW String ${OUTBASE}.libspec     XML        String      path=${OUTBASE}.libspec    docformat=MARKDOWN
     --format XML --specdocformat HTML String ${OUTBASE}.libspec    LIBSPEC    String      path=${OUTBASE}.libspec
+
+Library arguments
+    ${TESTDATADIR}/LibraryArguments.py::required::true ${OUTHTML}    HTML    LibraryArguments
+
+Library name matching spec extension
+    --pythonpath ${DATADIR}/libdoc LIBPKG.JSON ${OUTXML}        XML    LIBPKG.JSON    path=${OUTXML}
+    [Teardown]    Keyword Name Should Be    0    Keyword In Json
+
+Library name matching resource extension
+    --pythonpath ${DATADIR}/libdoc LIBPKG.resource ${OUTXML}    XML    LIBPKG.resource    path=${OUTXML}
+    [Teardown]    Keyword Name Should Be    0    Keyword In Resource
+
+Library argument matching resource extension
+    ${TESTDATADIR}/LibraryArguments.py::required::true::foo.resource ${OUTHTML}    HTML    LibraryArguments
+
+Library argument matching resource extension when import fails
+    [Template]    Run libdoc and verify output
+    NonExisting::foo.resource ${OUTHTML}
+    ...    Importing library 'NonExisting' failed: ModuleNotFoundError: No module named 'NonExisting'
+    ...    Traceback (most recent call last):
+    ...    ${SPACE*2}None
+    ...    PYTHONPATH:
+    ...    *
+    ...    ${USAGE TIP[1:]}
 
 Override name and version
     --name MyName --version 42 String ${OUTHTML}    HTML    MyName    42
-    -n MyName -v 42 -f xml BuiltIn ${OUTHTML}       XML     MyName    42
+    -n MyName -v 42 -f xml BuiltIn ${OUTHTML}       XML     MyName    42    docformat=MARKDOWN
 
 Missing destination subdirectory is created
     String ${NEWDIR_HTML}        HTML    String    path=${NEWDIR_HTML}
-    String ${NEWDIR_XML}         XML     String    path=${NEWDIR_XML}
+    String ${NEWDIR_XML}         XML     String    path=${NEWDIR_XML}    docformat=MARKDOWN
 
 Quiet
     --quiet String ${OUTHTML}    HTML    String    quiet=True
 
+Theme
+    --theme DARK String ${OUTHTML}     HTML    String    theme=dark
+    --theme light String ${OUTHTML}    HTML    String    theme=light
+    --theme NoNe String ${OUTHTML}     HTML    String    theme=
+
+Language
+    --language EN String ${OUTHTML}     HTML    String    lang=en
+    --language fI String ${OUTHTML}     HTML    String    lang=fi
+    --language NoNe String ${OUTHTML}   HTML    String    language=
+    --language NoNe String ${OUTMARKDOWN}     MARKDOWN      String    path=${OUTMARKDOWN}
+
 Relative path with Python libraries
     [Template]    NONE
-    ${dir in libdoc exec dir}=    Set Variable     ${ROBOTPATH}/../TempDirInExecDir
-    Directory Should Not Exist    ${dir in libdoc exec dir}
+    ${dir in libdoc exec dir}=    Normalize Path     ${ROBOTPATH}/../TempDirInExecDir
+    # Wait until possible other run executing this same test finishes.
+    Wait Until Removed    ${dir in libdoc exec dir}    30s
     Create Directory    ${dir in libdoc exec dir}
     Create File    ${dir in libdoc exec dir}/MyLibrary.py    def my_keyword(): pass
     Run Libdoc And Parse Output    ${dir in libdoc exec dir}/MyLibrary.py
@@ -43,16 +81,39 @@ Relative path with Python libraries
     Keyword Name Should Be    0    My Keyword
     [Teardown]    Remove Directory    ${dir in libdoc exec dir}    recursively
 
+Resource file in PYTHONPATH
+    [Template]    NONE
+    Run Libdoc And Parse Output    --pythonpath ${DATADIR}/libdoc resource.resource
+    Name Should Be    resource
+    Keyword Name Should Be    -1    Yay, I got new extension!
+
+Non-existing resource
+    [Template]    NONE
+    ${stdout} =    Run Libdoc    nonexisting.resource whatever.xml
+    Should Be Equal    ${stdout}     Resource file 'nonexisting.resource' does not exist.${USAGE TIP}\n
+
 *** Keywords ***
 Run Libdoc And Verify Created Output File
-    [Arguments]    ${args}   ${format}    ${name}    ${version}=    ${path}=${OUTHTML}    ${quiet}=False
+    [Arguments]    ${args}   ${format}    ${name}    ${version}=    ${path}=${OUTHTML}    ${theme}=    ${lang}=    ${quiet}=False    ${docformat}=
     ${stdout} =    Run Libdoc    ${args}
-    Run Keyword    ${format} Doc Should Have Been Created    ${path}    ${name}    ${version}
+    IF    $docformat
+        Run Keyword    ${format} Doc Should Have Been Created    ${path}    ${name}    ${version}    ${docformat}
+    ELSE
+        Run Keyword    ${format} Doc Should Have Been Created    ${path}    ${name}    ${version}
+    END
     File Should Have Correct Line Separators    ${path}
-    Run Keyword If    not ${quiet}
-    ...    Path to output should be in stdout    ${path}    ${stdout.rstrip()}
-    ...    ELSE
-    ...    Should be empty    ${stdout}
+    IF    "${theme}"
+        File Should Contain    ${path}    "theme": "${theme}"
+    ELSE IF    "${lang}"
+        File Should Contain    ${path}    "lang": "${lang}"
+    ELSE
+        File Should Not Contain    ${path}    "theme":
+    END
+    IF    not ${quiet}
+        Path to output should be in stdout    ${path}    ${stdout.rstrip()}
+    ELSE
+        Should be empty    ${stdout}
+    END
     [Teardown]    Remove Output Files
 
 HTML Doc Should Have Been Created
@@ -65,7 +126,7 @@ HTML Doc Should Have Been Created
 XML Doc Should Have Been Created
     [Arguments]    ${path}    ${name}    ${version}    ${docformat}=ROBOT
     ${libdoc}=           Parse Xml    ${path}
-    Set Test Variable    ${libdoc}
+    Set Test Variable    ${LIBDOC}
     Name Should Be       ${name}
     Format Should Be     ${docformat}
     Run Keyword If       "${version}"    Version Should Match    ${version}
@@ -73,14 +134,20 @@ XML Doc Should Have Been Created
 LIBSPEC Doc Should Have Been Created
     [Arguments]    ${path}    ${name}    ${version}    ${docformat}=HTML
     ${libdoc}=           Parse Xml    ${path}
-    Set Test Variable    ${libdoc}
+    Set Test Variable    ${LIBDOC}
     Name Should Be       ${name}
     Format Should Be     ${docformat}
     Run Keyword If       "${version}"    Version Should Match    ${version}
 
+MARKDOWN Doc Should Have Been Created
+    [Arguments]    ${path}    ${name}    ${version}
+    ${libdoc}=    Get File    ${path}
+    Should Start With    ${libdoc}    \# ${name}
+    IF    "${version}"
+        Should Contain    ${libdoc}    * Version: ${version}
+    END
+
 Path to output should be in stdout
-    [Documentation]    Printed path may be in different format than original.
-    ...                IronPython seems to like 'c:\olddos~1\format~2.ext'.
     [Arguments]    ${path}    ${stdout}
     File Should Exist    ${stdout}
     Remove File    ${path}

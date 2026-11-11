@@ -27,6 +27,10 @@ Evaluate
     Should Be Equal    ${stat}    ${True}
     Evaluate    INVALID
 
+Custom additions to builtins are supported
+    ${foo} =    Evaluate    setattr(builtins, 'foo', 'bar') or foo
+    Should Be Equal    ${foo}    bar
+
 Modules are imported automatically
     ${ceil} =    Evaluate    math.ceil(1.001)
     Should Be Equal    ${ceil}    ${2}
@@ -36,7 +40,7 @@ Modules are imported automatically
     Should Be Equal    ${sep}    ${/}
     Should Be Equal    ${+}    \\+
     ${version} =    Evaluate    robot.__version__.split('.')[0]
-    Should Be True    ${version} in (3, 4, 5)
+    Should Be True    ${version} in (6, 7, 8, 9)
 
 Importing non-existing module fails with NameError
     [Documentation]    FAIL
@@ -64,8 +68,6 @@ Automatic module imports are case-sensitive
     os.sep + OS.sep
 
 Automatic modules don't override builtins
-    ${result} =    Evaluate    repr(42)     # `repr` module exists in Python 2
-    Should Be Equal    ${result}    42
     ${result} =    Evaluate    len('foo')   # `len.py` exists in this directory
     Should Be Equal    ${result}    ${3}
 
@@ -104,6 +106,14 @@ Explicit modules can override builtins
 Explicit modules used in lambda
     ${result} =    Evaluate    ''.join(filter(lambda s: re.match('^He',s), $HELLO))    modules=re
     Should Be Equal    ${result}    Hello
+
+Evaluation namespace is mutable
+    [Documentation]    FAIL
+    ...    Evaluating expression "locals().__setitem__('var', 1) or locals().__delitem__('var') or var" failed: \
+    ...    NameError: name 'var' is not defined nor importable as module
+    ${variable} =    Evaluate    locals().__setitem__('variable', 'value') or variable
+    Should Be Equal    ${variable}    value
+    Evaluate    locals().__setitem__('var', 1) or locals().__delitem__('var') or var
 
 Custom namespace
     ${ns} =    Create Dictionary    a=x    b=${2}    c=2
@@ -205,7 +215,7 @@ Invalid expression 2
     Evaluate    Someone forgot to add quotes!
 
 Invalid expression 3
-    [Documentation]    FAIL STARTS: Evaluating expression 'We have\nmultiple\nlines' failed: SyntaxError:
+    [Documentation]    FAIL STARTS: Evaluating expression 'We have\\nmultiple\\nlines' failed: SyntaxError:
     Evaluate    We have\nmultiple\nlines
 
 Invalid expression 4
@@ -264,16 +274,36 @@ Evaluate Empty
     [Documentation]    FAIL Evaluating expression '' failed: ValueError: Expression cannot be empty.
     Evaluate    ${EMPTY}
 
-Evaluate Nonstring
-    [Documentation]    FAIL Evaluating expression '5' failed: TypeError: Expression must be string, got integer.
+Evaluate Non-string
+    [Documentation]    FAIL Evaluating expression 5 failed: TypeError: Expression must be string, got integer.
     Evaluate    ${5}
 
 Evaluate doesn't see module globals
     [Documentation]    FAIL STARTS: Evaluating expression 'DataError' failed: NameError:
     Evaluate    DataError
 
+Automatic variables are seen in expression part of comprehensions only with Python 3.12+
+    VAR    ${x}
+    VAR    ${error}
+    ...    Evaluating expression "[$x + x for x in 'abc']" failed:
+    ...    Robot Framework variable '$x' is used in a scope where it cannot be seen.
+    TRY
+        ${result} =    Evaluate    [$x + x for x in 'abc']
+    EXCEPT    ${error}
+        Should Be True     sys.version_info < (3, 12)
+    ELSE
+        Should Be True     sys.version_info >= (3, 12)
+        Should Be equal    ${result}    ${{['a', 'b', 'c']}}
+    END
+
+Automatic variables are not seen inside lambdas
+    [Documentation]    FAIL Evaluating expression '(lambda: $x)()' failed: \
+    ...    Robot Framework variable '$x' is used in a scope where it cannot be seen.
+    VAR    ${x}
+    Evaluate    (lambda: $x)()
+
 Evaluation errors can be caught
-    FOR    ${invalid}    IN    ooops    1/0    $    $nonex    len(None)    ${EMPTY}    ${7}
+    FOR    ${invalid}    IN    ooops    1/0    $    $nonex    len(None)    ${EMPTY}
         ${err1} =                 Run Keyword And Expect Error    *    Evaluate    ${invalid}
         ${status}    ${err2} =    Run Keyword And Ignore Error         Evaluate    ${invalid}
         Should Be Equal    ${status}    FAIL

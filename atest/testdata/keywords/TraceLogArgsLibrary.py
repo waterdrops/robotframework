@@ -1,4 +1,4 @@
-class TraceLogArgsLibrary(object):
+class TraceLogArgsLibrary:
 
     def only_mandatory(self, mand1, mand2):
         pass
@@ -12,31 +12,30 @@ class TraceLogArgsLibrary(object):
     def mandatory_and_varargs(self, mand, *varargs):
         pass
 
+    def named_only(self, *, no1="value", no2):
+        pass
+
     def kwargs(self, **kwargs):
         pass
 
-    def all_args(self, positional, *varargs, **kwargs):
+    def all_args(self, positional, *varargs, named_only, **kwargs):
         pass
 
-    def return_object_with_invalid_repr(self):
-        return InvalidRepr()
+    def return_object_with_non_ascii_repr(self):
+        class NonAsciiRepr:
+            def __repr__(self):
+                return "Hyv\xe4"
 
-    def return_object_with_non_ascii_string_repr(self):
         return NonAsciiRepr()
 
+    def return_object_with_invalid_repr(self):
+        class InvalidRepr:
+            def __repr__(self):
+                raise ValueError
+
+        return InvalidRepr()
+
     def embedded_arguments(self, *args):
-        assert args == ('bar', 'Embedded Arguments')
+        assert args == ("bar", "Embedded Arguments")
 
     embedded_arguments.robot_name = 'Embedded Arguments "${a}" and "${b}"'
-
-
-class InvalidRepr(object):
-
-    def __repr__(self):
-        return u'Hyv\xe4'
-
-
-class NonAsciiRepr(object):
-
-    def __repr__(self):
-        return 'Hyv\xe4'

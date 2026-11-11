@@ -36,8 +36,9 @@ Length Should Be with custom message
     ${LIST 2}    3    This fails
 
 Length Should Be with invalid length
-    [Documentation]    FAIL STARTS: 'This is not an integer' cannot be converted to an integer: ValueError:
-    Length Should Be    ${LIST 2}    This is not an integer
+    [Documentation]    FAIL
+    ...    ValueError: Argument 'length' got value 'invalid' that cannot be converted to integer.
+    Length Should Be    whatever    invalid
 
 Should Be Empty 1
     [Documentation]    FAIL '['a']' should be empty.
@@ -83,46 +84,29 @@ Should Not Be Empty with custom message
     I'm not empty    This would be the error message but there's no failure yet
     ${TUPLE 0}    My fine error says ${TUPLE 0} is empty
 
-Getting length with `length` method
+Getting length with `length` method is deprecated
     [Documentation]    FAIL 'length()' should be empty.
     Verify Get Length      ${LENGTH METHOD}    40
     Length Should Be       ${LENGTH METHOD}    40
     Should Not Be Empty    ${LENGTH METHOD}
     Should Be Empty        ${LENGTH METHOD}
 
-Getting length with `size` method
+Getting length with `size` method is deprecated
     [Documentation]    FAIL 'size()' should be empty.
     Verify Get Length      ${SIZE METHOD}    41
     Length Should Be       ${SIZE METHOD}    41
     Should Not Be Empty    ${SIZE METHOD}
     Should Be Empty        ${SIZE METHOD}
 
-Getting length with `length` attribute
+Getting length with `length` attribute is deprecated
     [Documentation]    FAIL 'length' should be empty.
     Verify Get Length      ${LENGTH ATTRIBUTE}    42
     Length Should Be       ${LENGTH ATTRIBUTE}    ${42}
     Should Not Be Empty    ${LENGTH ATTRIBUTE}
     Should Be Empty        ${LENGTH ATTRIBUTE}
 
-Getting length from Java types
-    [Documentation]    FAIL Length of '{}' should be 3 but is 0.
-    FOR    ${type}    IN    STRING    HASHTABLE    VECTOR    ARRAY
-        Verify Length Of Java Type    ${type}
-    END
-    Length Should Be    ${HASHTABLE 0}    3
-
 *** Keywords ***
 Verify Get Length
     [Arguments]    ${item}    ${exp}
     ${length} =    Get Length    ${item}
-    ${exp} =    Convert To Integer    ${exp}
-    Should Be Equal    ${length}    ${exp}
-
-Verify Length Of Java Type
-    [Arguments]    ${type}
-    FOR    ${i}    IN RANGE    4
-        Verify Get Length    ${${type} ${i}}    ${i}
-        Length Should Be    ${${type} ${i}}    ${i}
-    END
-    Should Not Be Empty    ${${type} 1}
-    Should Be Empty    ${${type} 0}
+    Should Be Equal    ${length}    ${exp}    type=int

@@ -69,30 +69,23 @@ Listen Imports
     ...    args: []
     ...    importer: //imports.robot
     ...    source: //vars.py
-    Java Expect
-    ...    Library
-    ...    ExampleJavaLibrary
-    ...    args: []
-    ...    importer: //imports.robot
-    ...    originalname: ExampleJavaLibrary
-    ...    source: None
     Expect
     ...    Library
     ...    OperatingSystem
     ...    args: []
-    ...    importer: None
+    ...    importer: //imports.robot
     ...    originalname: OperatingSystem
     ...    source: //OperatingSystem.py
     Expect
     ...    Resource
     ...    dynamically_imported_resource
-    ...    importer: None
+    ...    importer: //imports.robot
     ...    source: //dynamically_imported_resource.robot
     Expect
     ...    Variables
     ...    vars.py
     ...    args: [new, args]
-    ...    importer: None
+    ...    importer: //imports.robot
     ...    source: //vars.py
     Verify Expected
 
@@ -104,7 +97,7 @@ Failed Impors Are Listed In Errors
     ...    Importing library 'LibraryThatDoesNotExist' failed: *
     ...    traceback=None
     Error in file    2    ${path}    11
-    ...    Variable file 'variables which dont exist' does not exist.
+    ...    Variable file 'variables which dont exist.py' does not exist.
 
 *** Keywords ***
 Init expect
@@ -117,10 +110,6 @@ Expect
     ...    name: ${name}
     ...    @{attrs}
     Set test variable    @{EXPECTED}    @{EXPECTED}    ${entry}
-
-Java Expect
-    [Arguments]    ${type}    ${name}    @{attrs}
-    Run keyword if    $INTERPRETER.is_jython    Expect    ${type}    ${name}    @{attrs}
 
 Verify Expected
     Check Listener File    listener_imports.txt    @{EXPECTED}

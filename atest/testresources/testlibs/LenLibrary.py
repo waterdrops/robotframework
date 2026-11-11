@@ -1,4 +1,4 @@
-class LenLibrary(object):
+class LenLibrary:
     """Library with default zero __len__.
 
     Example:
@@ -8,6 +8,7 @@ class LenLibrary(object):
     >>> l.set_length(1)
     >>> assert l
     """
+
     def __init__(self):
         self._length = 0
 

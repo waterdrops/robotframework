@@ -14,10 +14,6 @@ Environment Variables In Keyword Argument
     Should Be Equal  %{THIS_ENV_VAR_IS_SET}  Env var value
     Should Be Equal  %{THIS_ENV_VAR_IS_SET} can be catenated. TEMPDIR: %{TEMPDIR}  Env var value can be catenated. TEMPDIR: %{TEMPDIR}
 
-Java System Properties Can Be Used
-    Should Be Equal  %{file.separator}  ${/}
-    Should Not Be Empty  %{os.name}
-
 Non-ASCII Environment Variable
     Set Environment Variable  nön_äsĉïï   äëïöüÿ
     Should Be Equal  %{nön_äsĉïï}  äëïöüÿ
@@ -99,12 +95,9 @@ Environment Variable with Empty Default Value
 Environment Variable with Equal Sign in Default Value
     Should Be Equal  %{NON_EXISTING_VAR=var=value}  var=value
 
-Java System Properties with Default Value
-    Should Be Equal  %{java.non.existing.property=default value}  default value
-
 *** Keywords ***
 UK With Environment Variables In Metadata
     [Arguments]  ${mypath}=%{TEMPDIR}
     [Documentation]  %{THIS_ENV_VAR_IS_SET} in a uk doc
     Should Contain  ${mypath}  ${/}
-    [Return]  %{THIS_ENV_VAR_IS_SET}
+    RETURN  %{THIS_ENV_VAR_IS_SET}

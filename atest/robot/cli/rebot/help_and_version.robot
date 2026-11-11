@@ -2,14 +2,30 @@
 Resource          rebot_cli_resource.robot
 
 *** Test Cases ***
-Help
-    ${result} =            Run Rebot       --help    output=NONE
-    Should Be Equal        ${result.rc}    ${251}
+---help
+    ${result} =    Run Rebot    --help    output=NONE
+    Validate --help    ${result}
+
+--help --no-status-rc
+    ${result} =    Run Rebot    --help --no-status-rc    output=NONE
+    Validate --help    ${result}    rc=0
+
+--version
+    ${result} =    Run Rebot    --version    output=NONE
+    Validate --version    ${result}
+
+--version --no-status-rc
+    ${result} =    Run Rebot    --VERSION --NoStatusRC    output=NONE
+    Validate --version    ${result}    rc=0
+
+*** Keywords ***
+Validate --help
+    [Arguments]    ${result}    ${rc}=251
+    Should Be Equal        ${result.rc}    ${rc}    type=int
     Should Be Empty        ${result.stderr}
-    ${help} =              Set Variable    ${result.stdout}
-    Log                    ${help}
+    VAR                    ${help}         ${result.stdout}
     Should Start With      ${help}         Rebot -- Robot Framework report and log generator\n\nVersion: \
-    Should End With        ${help}         \n$ jython path/robot/rebot.py -N Project_X -l none -r x.html output.xml\n
+    Should End With        ${help}         \n$ python -m robot.rebot --name Combined outputs/*.xml\n
     Should Not Contain     ${help}         \t
     Should Not Contain     ${help}         [ ERROR ]
     Should Not Contain     ${help}         [ WARN \ ]
@@ -20,10 +36,10 @@ Help
     Log Many               @{tail}
     Should Be Empty        ${tail}         Help lines with trailing spaces
 
-Version
-    ${result} =            Run Rebot       --version    output=NONE
-    Should Be Equal        ${result.rc}    ${251}
+Validate --version
+    [Arguments]    ${result}    ${rc}=251
+    Should Be Equal        ${result.rc}    ${rc}    type=int
     Should Be Empty        ${result.stderr}
     Should Match Regexp    ${result.stdout}
-    ...    ^Rebot [345]\\.\\d(\\.\\d)?((a|b|rc)\\d)?(\\.dev\\d)? \\((Python|Jython|IronPython|PyPy) [23]\\.[\\d.]+.* on .+\\)$
+    ...    ^Rebot [567]\\.\\d(\\.\\d)?((a|b|rc)\\d)?(\\.dev\\d)? \\((Python|PyPy) 3\\.[\\d.]+.* on .+\\)$
     Should Be True         len($result.stdout) < 80    Too long version line

@@ -14,21 +14,21 @@ Wait For Process
 Wait For Process Timeout
     ${process} =    Start Python Process    while True: pass
     Process Should Be Running    ${process}
-    ${result} =    Wait For Process    ${process}    timeout=1s
+    ${result} =    Wait For Process    ${process}    timeout=0.25s
     Process Should Be Running    ${process}
     Should Be Equal    ${result}    ${NONE}
 
 Wait For Process Terminate On Timeout
     ${process} =   Start Python Process    while True: pass
     Process Should Be Running    ${process}
-    ${result} =    Wait For Process    ${process}    timeout=1s    on_timeout=terminate
+    ${result} =    Wait For Process    ${process}    timeout=0.25s    on_timeout=terminate
     Process Should Be Stopped    ${process}
     Should Not Be Equal As Integers    ${result.rc}    0
 
 Wait For Process Kill On Timeout
     ${process} =   Start Python Process    while True: pass
     Process Should Be Running    ${process}
-    ${result} =    Wait For Process    ${process}    timeout=1s    on_timeout=kill
+    ${result} =    Wait For Process    ${process}    timeout=0.25s    on_timeout=kill
     Process Should Be Stopped    ${process}
     Should Not Be Equal As Integers    ${result.rc}    0
 
@@ -39,5 +39,4 @@ Wait for process uses minimum of timeout or internal timeout for polling
     Wait For Process    ${process}    0.001
     ${now}=      Get Current Date
     ${result} =   Subtract Date From Date    ${now}    ${start}
-    # Should be a lot faster than 0.2 but at least IronPython is a bit slow.
-    Should be true   ${result} < 0.2   Maximum time of 0.2s exceeded. Took ${result}s.
+    Should be true   ${result} < 0.1   Maximum time of 0.1s exceeded. Took ${result}s.

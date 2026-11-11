@@ -20,10 +20,11 @@ Newline and tab
     '\\t\\n\\r'    '\\t\\n\\n'
 
 Binary
-    '\\x00\\x01\\x02'    b'\\x00\\x01\\x02'    binary=yes
-    'foo\\x00bar'        b'foo\\x00bar'        binary=yes
-    u'\\x00\\x01'        b'\\x00\\x01'         binary=yes
-    bytearray([0, 1])    b'\\x00\\x01'         binary=yes
+    '\\x00\\x01\\x02'         b'\\x00\\x01\\x02'    binary=yes
+    'foo\\x00bar'             b'foo\\x00bar'        binary=yes
+    u'\\x00\\x01'             b'\\x00\\x01'         binary=yes
+    u'\\x00\\xe4\\xff'        b'\\x00\\xe4\\xff'    binary=yes
+    bytearray([0, 1, 228])    b'\\x00\\x01\\xe4'    binary=yes
 
 Binary in non-ASCII range
     b'\\x00\\x01\\xe4'              binary=yes
@@ -33,7 +34,6 @@ Binary in non-ASCII range
 
 Binary with too big Unicode characters
     [Template]  Run Keyword And Expect Error
-    ValueError: Cannot represent *'\\x00\\x01*' as binary.    One Argument    \x00\x01\xff
     ValueError: Cannot represent *'\\x00\\x01*' as binary.    One Argument    \x00\x01\u2603
 
 Unrepresentable Unicode
@@ -57,6 +57,15 @@ Boolean
 
 None
     None    ''
+
+Datetime
+    datetime.datetime(2023, 9, 12, 16, 8)    datetime(2023, 9, 12, 16, 8)
+
+Date
+    datetime.date(2023, 9, 12)               datetime(2023, 9, 12)
+
+Timedelta
+    datetime.timedelta(seconds=3.14)         3.14
 
 Custom object
     [Documentation]    Arbitrary objects cannot be transferred over XML-RPC and thus only their string presentation is used
@@ -105,15 +114,15 @@ Dictionary with non-string keys and values
     {1: 'a', 2: 3, (): (), None: None}    {'1': 'a', '2': 3, '()': [], '': ''}
 
 Dictionary with non-ASCII keys
-    {u'\\xe4': 1}
-    {u'\\u2603': 2}
+    {'\\xe4': 1}
+    {'\\u2603': 2}
 
 Dictionary with non-ASCII values
-    {'1': u'\\xe4'}
-    {'2': u'\\u2603'}
+    {'1': '\\xe4'}
+    {'2': '\\u2603'}
 
 Dictionary with non-ASCII byte keys
-    {b'\\x80': 'xx'}    {'\\\\x80': 'xx'}
+    {b'\\x80': 'xx'}    {'\\x80': 'xx'}
 
 Dictionary with non-ASCII byte values
     {'xx': b'\\xe4'}    binary=yes

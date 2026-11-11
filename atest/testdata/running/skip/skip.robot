@@ -2,7 +2,8 @@
 Library            skiplib.py
 
 *** Variables ***
-${TEST_OR_TASK}    Test
+${TEST_OR_TASK}    test
+${SKIP}            skip
 
 *** Test Cases ***
 Skip keyword
@@ -98,20 +99,20 @@ Skip in Teardown After Skip In Body
     Skip    Skip in body
     [Teardown]    Skip    Teardown skip
 
-Skip with Continuable Failure
+Skip After Continuable Failure
     [Documentation]    SKIP
-    ...    Skipping should stop execution but test should still fail
+    ...    Skip wins over failure!
     ...
     ...    Also failure occurred:
     ...    We can continue!
     Run Keyword And Continue On Failure
     ...    Fail    We can continue!
-    Skip    Skipping should stop execution but test should still fail
+    Skip    Skip wins over failure!
     Fail    Should not be executed!
 
-Skip with Multiple Continuable Failures
+Skip After Multiple Continuable Failures
     [Documentation]    SKIP
-    ...    Skip after two failures
+    ...    Skip wins over two failures!!
     ...
     ...    Also failures occurred:
     ...
@@ -122,8 +123,35 @@ Skip with Multiple Continuable Failures
     ...    Fail    We can continue!
     Run Keyword And Continue On Failure
     ...    Fail    We can continue again!
-    Skip    Skip after two failures
+    Skip    Skip wins over two failures!!
     Fail    Should not be executed!
+
+Skip After Continuable Failure with HTML Message
+    [Documentation]    SKIP
+    ...    *HTML* Skipeti &lt;b&gt;skip&lt;/b&gt;
+    ...
+    ...    Also failure occurred:
+    ...    We <b>can</b> continue!
+    Run Keyword And Continue On Failure
+    ...    Fail    *HTML* We <b>can</b> continue!
+    Skip    Skipeti <b>skip</b>
+
+Skip After Multiple Continuable Failure with HTML Messages
+    [Documentation]    SKIP
+    ...    *HTML* Skipeti <b>skip</b>
+    ...
+    ...    Also failures occurred:
+    ...
+    ...    1) We <b>can</b> continue!
+    ...
+    ...    2) Can continue also without &lt;b&gt;HTML&lt;/b&gt;
+    ...
+    ...    3) Continuing again with <b>HTML</b>
+    [Tags]    robot: continue-on-failure
+    Fail    *HTML* We <b>can</b> continue!
+    Fail    Can continue also without <b>HTML</b>
+    Fail    *HTML* Continuing again with <b>HTML</b>
+    Skip    *HTML* Skipeti <b>skip</b>
 
 Skip in Teardown After Continuable Failures
     [Documentation]    SKIP
@@ -153,7 +181,7 @@ Skip with Pass Execution in Teardown
 Skip in Teardown with Pass Execution in Body
     [Documentation]    SKIP Then we skip
     Pass Execution    First we pass
-    [Teardown]    Skip  Then we skip
+    [Teardown]    Skip    Then we skip
 
 Skip with Run Keyword and Ignore Error
     [Documentation]    SKIP Skip from within
@@ -177,69 +205,97 @@ Skip with Wait Until Keyword Succeeds
     Fail    Should not be executed!
 
 Skipped with --skip
-    [Documentation]    SKIP ${TEST_OR_TASK} skipped with '--skip' command line option.
+    [Documentation]    SKIP    ${TEST_OR_TASK.title()} skipped using 'skip-this' tag.
     [Tags]    skip-this
-    Fail
+    Fail    Should not be executed!
+
+Skipped with --skip when tag uses variable
+    [Documentation]    SKIP    ${TEST_OR_TASK.title()} skipped using 'skip-this' tag.
+    [Tags]    ${SKIP}-this
+    Fail    Should not be executed!
+
+Skipped with robot:skip
+    [Documentation]    SKIP    Test skipped using 'robot:skip' tag.
+    [Tags]    robot:skip
+    Fail    Should not be executed!
+
+Skipped with robot:skip when tag uses variable
+    [Documentation]    SKIP    Test skipped using 'robot:skip' tag.
+    [Tags]    robot:${SKIP}    robot:whatever
+    Fail    Should not be executed!
 
 Skipped with --SkipOnFailure
     [Documentation]    SKIP
-    ...    ${TEST_OR_TASK} failed but its tags matched '--SkipOnFailure' and it was marked skipped.
+    ...    Failed ${TEST_OR_TASK} skipped using 'skip-on-failure' tag.
     ...
     ...    Original failure:
     ...    Ooops, we fail!
     [Tags]    skip-on-failure
     Fail    Ooops, we fail!
 
-Skipped with --SkipOnFailure when Failure in Test Setup
+Skipped with --SkipOnFailure when tag uses variable
     [Documentation]    SKIP
-    ...    ${TEST_OR_TASK} failed but its tags matched '--SkipOnFailure' and it was marked skipped.
+    ...    Failed ${TEST_OR_TASK} skipped using 'skip-on-failure' tag.
+    ...
+    ...    Original failure:
+    ...    Ooops, we fail!
+    [Tags]    ${SKIP}-on-failure
+    Fail    Ooops, we fail!
+
+Skipped with --SkipOnFailure when failure in setup
+    [Documentation]    SKIP
+    ...    Failed ${TEST_OR_TASK} skipped using 'skip-on-failure' tag.
     ...
     ...    Original failure:
     ...    Setup failed:
     ...    failure in setup
-    [Tags]    skip-on-failure
+    [Tags]    SKIP-ON-FAILURE
     [Setup]    Fail    failure in setup
     No Operation
 
-Skipped with --SkipOnFailure when Failure in Test Teardown
+Skipped with --SkipOnFailure when failure in teardown
     [Documentation]    SKIP
-    ...    ${TEST_OR_TASK} failed but its tags matched '--SkipOnFailure' and it was marked skipped.
+    ...    Failed ${TEST_OR_TASK} skipped using 'skip-on-failure' tag.
     ...
     ...    Original failure:
-    ...    Setup failed:
+    ...    Teardown failed:
     ...    failure in teardown
     [Tags]    skip-on-failure
-    [Teardown]    Fail    failure in teardown
     No Operation
+    [Teardown]    Fail    failure in teardown
 
-Skipped with --SkipOnFailure when Set Tags Used in Teardown
+Skipped with --SkipOnFailure when Set Tags used in teardown
     [Documentation]    SKIP
-    ...    ${TEST_OR_TASK} failed but its tags matched '--SkipOnFailure' and it was marked skipped.
+    ...    Failed ${TEST_OR_TASK} skipped using 'skip-on-failure' tag.
     ...
     ...    Original failure:
     ...    Ooops, we fail!
     Fail    Ooops, we fail!
     [Teardown]    Set Tags    skip-on-failure
 
---NonCritical Is an Alias for --SkipOnFailure
+Skipped with robot:skip-on-failure
     [Documentation]    SKIP
-    ...    ${TEST_OR_TASK} failed but its tags matched '--SkipOnFailure' and it was marked skipped.
+    ...    Failed ${TEST_OR_TASK} skipped using 'robot:skip-on-failure' tag.
     ...
     ...    Original failure:
-    ...    AssertionError
-    [Tags]    non-crit
-    Fail
+    ...    We fail here, but the test is reported as skipped.
+    [Tags]    robot:skip-on-failure
+    Fail    We fail here, but the test is reported as skipped.
 
---Critical can be used to override --SkipOnFailure
+Skipped with robot:skip-on-failure when tag uses variable
+    [Documentation]    SKIP
+    ...    Failed ${TEST_OR_TASK} skipped using 'robot:skip-on-failure' tag.
+    ...
+    ...    Original failure:
+    ...    We fail here, but the test is reported as skipped.
+    [Tags]    robot:${SKIP}-on-FAILURE
+    Fail    We fail here, but the test is reported as skipped.
+
+Failing
     [Documentation]    FAIL AssertionError
-    [Tags]    dynamic-skip    crit
     Fail
 
-Failing Test
-    [Documentation]    FAIL AssertionError
-    Fail
-
-Passing Test
+Passing
     No Operation
 
 *** Keywords ***

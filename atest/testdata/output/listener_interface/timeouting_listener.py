@@ -1,12 +1,12 @@
-from robot.errors import TimeoutError
+from robot.errors import TimeoutExceeded
 
 
-class timeouting_listener(object):
+class timeouting_listener:
     ROBOT_LISTENER_API_VERSION = 2
     timeout = False
 
     def start_keyword(self, name, info):
-        self.timeout = name == 'BuiltIn.Log'
+        self.timeout = name == "BuiltIn.Log"
 
     def end_keyword(self, name, info):
         self.timeout = False
@@ -14,4 +14,4 @@ class timeouting_listener(object):
     def log_message(self, message):
         if self.timeout:
             self.timeout = False
-            raise TimeoutError('Emulated timeout inside log_message')
+            raise TimeoutExceeded("Emulated timeout inside log_message")

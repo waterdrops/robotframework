@@ -2,15 +2,21 @@
 Suite Setup       Run Tests    ${EMPTY}    standard_libraries/operating_system/run.robot
 Resource          atest_resource.robot
 
+*** Variables ***
+${DEPRECATED}    *This keyword is considered deprecated. Use the [Process] library instead.*
+
 *** Test Cases ***
 Run
-    Check Test Case    ${TESTNAME}
+    ${tc} =    Check Test Case    ${TESTNAME}
+    Should Be Equal    ${tc[0].doc}    ${DEPRECATED}
 
 Run With RC And Stdout Checks
-    Check Test Case    ${TESTNAME}
+    ${tc} =    Check Test Case    ${TESTNAME}
+    Should Be Equal    ${tc[0].doc}    ${DEPRECATED}
 
 Run With RC Checks
-    Check Test Case    ${TESTNAME}
+    ${tc} =    Check Test Case    ${TESTNAME}
+    Should Be Equal    ${tc[0, 0].doc}    ${DEPRECATED}
 
 Run With Stdout Checks
     Check Test Case    ${TESTNAME}
@@ -40,5 +46,4 @@ Trailing Newline Is Removed Automatically
     Check Test Case    ${TESTNAME}
 
 It Is Possible To Start Background Processes
-    [Tags]    no-jython
     Check Test Case    ${TESTNAME}

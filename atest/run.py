@@ -1,127 +1,175 @@
 #!/usr/bin/env python3
 
-"""A script for running Robot Framework's acceptance tests.
+"""A script for running Robot Framework's own acceptance tests.
 
-Usage:  atest/run.py interpreter [options] datasource(s)
+Usage:  atest/run.py [-I name] [-S] [-R] [options] [data]
 
-Data sources are paths to directories or files under the `atest/robot` folder.
+`data` is path (or paths) of the file or directory under the `atest/robot`
+folder to execute. If `data` is not given, all tests except for tests tagged
+with `no-ci` are executed.
 
-Available options are the same that can be used with Robot Framework.
-See its help (e.g. `robot --help`) for more information.
+Available `options` are in general normal Robot Framework options, but there
+are some exceptions listed below.
 
-The specified interpreter is used by acceptance tests under `atest/robot` to
-run test cases under `atest/testdata`. It can be the name of the interpreter
-like (e.g. `python` or `jython`, a path to the selected interpreter like
-`/usr/bin/python36`, or a path to the standalone jar distribution (e.g.
-`dist/robotframework-3.2b3.dev1.jar`). The standalone jar needs to be
-separately created with `invoke jar`.
+By default, the same Python interpreter that is used for running this script is
+also used for running tests. That can be changed by using the `--interpreter`
+(`-I`) option. It can be the name of the interpreter like `pypy3` or a path to
+the selected interpreter like `/usr/bin/python39`. If the interpreter itself
+needs arguments, the interpreter and its arguments need to be quoted like
+`"py -3.12"`.
 
-If the interpreter itself needs arguments, the interpreter and its arguments
-need to be quoted like `"py -3"`.
+To enable schema validation for all suites, use the `--schema-validation`
+(`-S`) option. This is the same as setting the `ATEST_VALIDATE_OUTPUT`
+environment variable to `TRUE`.
 
-Note that this script itself must always be executed with Python 3.6 or newer.
+Use `--rerun-failed (`-R`)` to re-execute failed tests from the previous run.
+
+The output directory is set based on the interpreter version and operating
+system by default. It can be changed using the normal `--outputdir` option.
 
 Examples:
-$ atest/run.py python --test example atest/robot
-$ atest/run.py /opt/jython27/bin/jython atest/robot/tags/tag_doc.robot
-> atest\\run.py "py -3" -e no-ci atest\\robot
+$ atest/run.py
+$ atest/run.py --exclude no-ci atest/robot/standard_libraries
+$ atest/run.py --interpreter pypy3
+$ atest/run.py --rerun-failed
+
+The results of the test execution are written into an interpreter specific
+directory under the `atest/results` directory. Temporary outputs created
+during the execution are created under the system temporary directory.
 """
 
+import argparse
 import os
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
-from os.path import abspath, dirname, exists, join, normpath
+from pathlib import Path
 
-from interpreter import InterpreterFactory
+from interpreter import Interpreter
 
-
-CURDIR = dirname(abspath(__file__))
-ARGUMENTS = '''
+CURDIR = Path(__file__).parent
+LATEST = str(CURDIR / "results/{interpreter.output_name}-latest.xml")
+ARGUMENTS = """
 --doc Robot Framework acceptance tests
 --metadata interpreter:{interpreter}
---variablefile {variable_file};{interpreter.path};{interpreter.name};{interpreter.version}
+--variable-file {variable_file};{interpreter.path};{interpreter.name};{interpreter.version}
 --pythonpath {pythonpath}
---outputdir {outputdir}
+--output-dir {output_dir}
 --splitlog
 --console dotted
---consolewidth 100
---SuiteStatLevel 3
---TagStatExclude no-*
-'''.strip()
+--console-width 100
+--suite-stat-level 3
+--log NONE
+--report NONE
+""".strip()
 
 
-def atests(interpreter, *arguments):
-    try:
-        interpreter = InterpreterFactory(interpreter)
-    except ValueError as err:
-        sys.exit(err)
-    outputdir, tempdir = _get_directories(interpreter)
-    arguments = list(_get_arguments(interpreter, outputdir)) + list(arguments)
-    return _run(arguments, tempdir, interpreter)
+def atests(interpreter, arguments, output_dir=None, schema_validation=False):
+    output_dir, temp_dir = _get_directories(interpreter, output_dir)
+    arguments = list(_get_arguments(interpreter, output_dir)) + list(arguments)
+    rc = _run(arguments, temp_dir, interpreter, schema_validation)
+    if rc < 251:
+        _rebot(rc, output_dir, interpreter)
+    return rc
 
 
-def _get_directories(interpreter):
+def _get_directories(interpreter, output_dir=None):
     name = interpreter.output_name
-    outputdir = dos_to_long(join(CURDIR, 'results', name))
-    tempdir = dos_to_long(join(tempfile.gettempdir(), 'robottests', name))
-    if exists(outputdir):
-        shutil.rmtree(outputdir)
-    if exists(tempdir):
-        shutil.rmtree(tempdir)
-    os.makedirs(tempdir)
-    return outputdir, tempdir
+    if output_dir:
+        output_dir = Path(output_dir)
+    else:
+        output_dir = CURDIR / "results" / name
+    temp_dir = Path(tempfile.gettempdir()) / "robotatest" / name
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
+    return output_dir, temp_dir
 
 
-def _get_arguments(interpreter, outputdir):
-    arguments = ARGUMENTS.format(interpreter=interpreter,
-                                 variable_file=join(CURDIR, 'interpreter.py'),
-                                 pythonpath=join(CURDIR, 'resources'),
-                                 outputdir=outputdir)
+def _get_arguments(interpreter, output_dir):
+    arguments = ARGUMENTS.format(
+        interpreter=interpreter,
+        variable_file=CURDIR / "interpreter.py",
+        pythonpath=CURDIR / "resources",
+        output_dir=output_dir,
+    )
     for line in arguments.splitlines():
-        for part in line.split(' ', 1):
-            yield part
+        yield from line.split(" ", 1)
     for exclude in interpreter.excludes:
-        yield '--exclude'
+        yield "--exclude"
         yield exclude
 
 
-def _run(args, tempdir, interpreter):
-    runner = normpath(join(CURDIR, '..', 'src', 'robot', 'run.py'))
-    command = [sys.executable, runner] + args
-    environ = dict(os.environ,
-                   TEMPDIR=tempdir,
-                   CLASSPATH=interpreter.classpath or '',
-                   JAVA_OPTS=interpreter.java_opts or '',
-                   PYTHONCASEOK='True',
-                   PYTHONIOENCODING='')
-    print('%s\n%s\n' % (interpreter, '-' * len(str(interpreter))))
-    print('Running command:\n%s\n' % ' '.join(command))
+def _run(args, tempdir, interpreter, schema_validation):
+    command = [
+        str(c) for c in [sys.executable, CURDIR.parent / "src/robot/run.py", *args]
+    ]
+    environ = dict(
+        os.environ,
+        TEMPDIR=str(tempdir),
+        PYTHONCASEOK="True",
+        PYTHONIOENCODING="",
+        PYTHONWARNDEFAULTENCODING="True",
+    )
+    if schema_validation:
+        environ["ATEST_VALIDATE_OUTPUT"] = "TRUE"
+    print(f"{interpreter}\n{interpreter.underline}\n")
+    print(f"Running command:\n{' '.join(command)}\n")
     sys.stdout.flush()
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     return subprocess.call(command, env=environ)
 
 
-def dos_to_long(path):
-    """Convert Windows paths in DOS format (e.g. exampl~1.txt) to long format.
+def _rebot(rc, output_dir, interpreter):
+    output = output_dir / "output.xml"
+    if rc == 0:
+        print("All tests passed, not generating log or report.")
+    else:
+        command = [
+            sys.executable,
+            str(CURDIR.parent / "src/robot/rebot.py"),
+            "--output-dir",
+            str(output_dir),
+            str(output),
+        ]
+        subprocess.call(command)
+    latest = Path(LATEST.format(interpreter=interpreter))
+    latest.unlink(missing_ok=True)
+    shutil.copy(output, latest)
 
-    This is done to avoid problems when later comparing paths. Especially
-    IronPython handles DOS paths inconsistently.
-    """
-    if not (os.name == 'nt' and '~' in path and os.path.exists(path)):
-        return path
-    from ctypes import create_unicode_buffer, windll
-    buf = create_unicode_buffer(500)
-    windll.kernel32.GetLongPathNameW(path, buf, 500)
-    return buf.value
 
-
-if __name__ == '__main__':
-    if len(sys.argv) == 1 or '--help' in sys.argv:
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-I", "--interpreter", default=sys.executable)
+    parser.add_argument("-S", "--schema-validation", action="store_true")
+    parser.add_argument("-R", "--rerun-failed", action="store_true")
+    parser.add_argument("-d", "--outputdir")
+    parser.add_argument("-h", "--help", action="store_true")
+    options, robot_args = parser.parse_known_args()
+    try:
+        interpreter = Interpreter(options.interpreter)
+    except ValueError as err:
+        sys.exit(str(err))
+    if options.rerun_failed:
+        robot_args[:0] = ["--rerun-failed", LATEST.format(interpreter=interpreter)]
+    last = Path(robot_args[-1]) if robot_args else None
+    source_given = last and (
+        last.is_dir() or last.is_file() and last.suffix == ".robot"
+    )
+    if not source_given:
+        robot_args += ["--exclude", "no-ci", CURDIR / "robot"]
+    if options.help:
         print(__doc__)
         rc = 251
     else:
-        rc = atests(*sys.argv[1:])
+        rc = atests(
+            interpreter,
+            robot_args,
+            options.outputdir,
+            options.schema_validation,
+        )
     sys.exit(rc)

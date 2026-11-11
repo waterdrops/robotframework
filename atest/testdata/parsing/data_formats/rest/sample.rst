@@ -1,5 +1,12 @@
+..
+   When parsing ReST files, only robotframework code blocks
+   and includes need to be parsed.
 .. include:: empty.rest
 .. include:: include.rst
+
+.. Sphinx directive, causes error with plain docutils.
+.. highlight:: robotframework
+
 
 ReST Test Data Example
 ======================
@@ -9,7 +16,7 @@ We have a devious plan to rule the world with robots.
 
 .. code:: robotframework
 
-   *Setting*      *Value*
+   *Settings*      *Value*
 
    Documentation  A complex testdata file in rst format.
    # Default Tags are in include.rst
@@ -20,11 +27,15 @@ We have a devious plan to rule the world with robots.
    Resource       ../resources/rest_directive_resource.rst
    | Variables  | ../resources/variables.py
    | Library    | OperatingSystem | | | | | | | | | | | | | | | |
+   Invalid    Setting
 
-The following are non-standard docutils directives, and we should ignore
-errors when parsing this.
+.. csv-table:: cannot and should not be parsed
+   :file: not/a/real/path.csv
 
-Testing also a :term:`test` as it should generate an error.
+The following are non-standard docutils directives and no errors
+should arise when parsing this.
+
+Testing also a :term:`test` as it should not generate an error.
 
 .. highlight:: robotframework
 
@@ -55,7 +66,7 @@ def ignore_me_or_die():
 
 .. code:: robotframework
 
-          * Variable
+          * Variables
 
           ${table_var}   foo
           @{table_listvar}   bar   ${table_var}
@@ -66,7 +77,7 @@ We support also `code-block` and `sourcecode` directives as alias for `code`.
 
 .. code-block:: robotframework
 
-   ***Test Case***
+   ***Test Cases***
 
    Passing   Log   Passing test case.
 

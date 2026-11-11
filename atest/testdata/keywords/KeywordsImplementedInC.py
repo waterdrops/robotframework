@@ -1,6 +1,4 @@
-from __future__ import print_function
-
-from operator import eq
+from operator import eq  # noqa: F401
 
 length = len
-print = print
+print = print  # noqa

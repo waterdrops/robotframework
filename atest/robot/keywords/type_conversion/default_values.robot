@@ -9,6 +9,15 @@ Integer
 Integer as float
     Check Test Case    ${TESTNAME}
 
+Integer as hex
+    Check Test Case    ${TESTNAME}
+
+Integer as octal
+    Check Test Case    ${TESTNAME}
+
+Integer as binary
+    Check Test Case    ${TESTNAME}
+
 Invalid integer
     Check Test Case    ${TESTNAME}
 
@@ -34,11 +43,9 @@ String
     Check Test Case    ${TESTNAME}
 
 Bytes
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 Invalid bytes
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 Bytearray
@@ -65,11 +72,26 @@ Timedelta
 Invalid timedelta
     Check Test Case    ${TESTNAME}
 
+Path
+    Check Test Case    ${TESTNAME}
+
+Invalid Path
+    Check Test Case    ${TESTNAME}
+
 Enum
-    [Tags]    require-enum
+    Check Test Case    ${TESTNAME}
+
+Flag
+    Check Test Case    ${TESTNAME}
+
+IntEnum
+    Check Test Case    ${TESTNAME}
+
+IntFlag
     Check Test Case    ${TESTNAME}
 
 Invalid enum
+    [Tags]    require-enum
     Check Test Case    ${TESTNAME}
 
 None
@@ -94,21 +116,15 @@ Invalid dictionary
     Check Test Case    ${TESTNAME}
 
 Set
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 Invalid set
     Check Test Case    ${TESTNAME}
 
 Frozenset
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 Invalid frozenset
-    Check Test Case    ${TESTNAME}
-
-Sets are not supported in Python 2
-    [Tags]    require-py2
     Check Test Case    ${TESTNAME}
 
 Unknown types are not converted
@@ -117,15 +133,10 @@ Unknown types are not converted
 Positional as named
     Check Test Case    ${TESTNAME}
 
-Invalid positional as named
-    Check Test Case    ${TESTNAME}
-
 Kwonly
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 Invalid kwonly
-    [Tags]    require-py3
     Check Test Case    ${TESTNAME}
 
 @keyword decorator overrides default values

@@ -24,7 +24,7 @@ Should Not Be Equal As Integers
     [Template]    Should Not Be Equal As Integers
     1    0
     0    ${1}
-    1    ${1}    This message only    No values
+    1    ${1}    This message only    values=False
 
 Should Not Be Equal As Integers with base
     [Documentation]    Conversion functionality tested with `Convert To Integer`
@@ -40,14 +40,17 @@ Should Be Equal As Numbers
     1    1.0001    Only this message    False
 
 Should Be Equal As Numbers with precision
-    [Documentation]    FAIL Failure: 110.0 != 150.0
+    [Documentation]    FAIL Failure: 120.0 != 140.0
     [Template]    Should Be Equal As Numbers
     1.123       1.456      precision=0
     1.123       ${1.1}     precision=1
     ${1.123}    ${1.12}    precision=2
     1123        1456       precision=-3
     112         145        precision=-2
-    112         145        precision=-1    msg=Failure
+    # Due to "bankers rounding" algorithm used by `round`, 145 is rounded to 140,
+    # not to 150, as we learned in school.
+    135         145        precision=-1
+    115         145        precision=-1    msg=Failure
 
 Should Not Be Equal As Numbers
     [Documentation]    FAIL Fails again: 1.0 == 1.0
@@ -146,12 +149,26 @@ Should Be Equal As Strings multiline
     ...    --- first
     ...    +++ second
     ...    @@ -1,3 +1,4 @@
-    ...   \ foo
+    ...     foo
     ...    -bar
     ...    +bar
     ...    +gar
-    ...   \ dar
+    ...     dar
     Should Be Equal As Strings    foo\nbar\r\ndar    foo\nbar\ngar\ndar
+
+Should Be Equal As Strings multiline with custom message
+    [Documentation]    FAIL
+    ...    Custom message of mine: Multiline strings are different:
+    ...    --- first
+    ...    +++ second
+    ...    @@ -1,3 +1,4 @@
+    ...     foo
+    ...    -bar
+    ...    +bar
+    ...    +gar
+    ...     dar
+    Should Be Equal As Strings    foo\nbar\r\ndar    foo\nbar\ngar\ndar
+    ...    msg=Custom message of mine
 
 Should Be Equal As Strings repr multiline
     [Documentation]    FAIL
@@ -159,11 +176,11 @@ Should Be Equal As Strings repr multiline
     ...    --- first
     ...    +++ second
     ...    @@ -1,3 +1,4 @@
-    ...   \ 'foo\\n'
+    ...     'foo\\n'
     ...    -'bar\\r\\n'
     ...    +'bar\\n'
     ...    +'gar\\n'
-    ...   \ 'dar'
+    ...     'dar'
     Should Be Equal As Strings    foo\nbar\r\ndar    foo\nbar\ngar\ndar    formatter=repr
 
 Should Not Be Equal As Strings
@@ -212,3 +229,43 @@ Should Not Be Equal As Strings without leading and trailing spaces
     \t1${SPACE}    \ ${1}\t     strip_spaces=True
     \tHyvää        \tHyvää\n    strip_spaces=yes
     \ntest\t       \ttest \n    strip_spaces=no
+
+Should Not Be Equal As Strings and do not collapse spaces
+    [Documentation]     FAIL Hyvää\t\npäivää == Hyvää\t\npäivää
+    [Template]    Should Not Be Equal As Strings
+    1\ \ 2             1 2                collapse_spaces=False
+    Hyvää\t\npäivää    Hyvää\t\npäivää    collapse_spaces=No
+    Yo yo              Yo\tyo             collapse_spaces=${FALSE}
+
+Should Not Be Equal As Strings and collapse spaces
+    [Documentation]     FAIL Several failures occurred:
+    ...
+    ...    1) 1 2 == 1 2
+    ...
+    ...    2) Hyvää päivää == Hyvää päivää
+   [Template]    Should Not Be Equal As Strings
+    1\ \ 2             1 2               collapse_spaces=True
+    Hyvää\n\tpäivää    Hyvää \tpäivää    collapse_spaces=Yes
+    Yo yo              Yo\tYo            collapse_spaces=${TRUE}
+
+Should Be Equal As Strings and do not collapse spaces
+    [Documentation]     FAIL Several failures occurred:
+    ...
+    ...    1) 1\ \ 2 != 1 2
+    ...
+    ...    2) \ \nYo yo != Yo\tyo
+    [Template]    Should Be Equal As Strings
+    1\ \ 2            1 2               collapse_spaces=False
+    Hyvää \ päivää    Hyvää \ päivää    collapse_spaces=No
+    \ \nYo yo         Yo\tyo            collapse_spaces=${FALSE}
+
+Should Be Equal As Strings and collapse spaces
+    [Documentation]     FAIL Several failures occurred:
+    ...
+    ...    1) 1 2 != \ 1 2
+    ...
+    ...    2) Yo yo != Yo Yo
+   [Template]    Should Be Equal As Strings
+    1\ \ 2            \ \ 1 2          collapse_spaces=True
+    Hyvää \ päivää    Hyvää\tpäivää    collapse_spaces=Yes
+    Yo\n\t\tyo        Yo\tYo           collapse_spaces=${TRUE}

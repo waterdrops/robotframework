@@ -28,6 +28,12 @@ distribution from PyPI_ and install it manually. For more details and other
 installation approaches, see the `installation instructions`_.
 
 Robot Framework 4.0 was released on Thursday March 11, 2021.
+It has been superseded by Robot Framework `4.0.1`__, `4.0.2`__ and `4.0.3`__
+bug fix releases. Using the latest release is recommended.
+
+__ https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-4.0.1.rst
+__ https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-4.0.2.rst
+__ https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-4.0.3.rst
 
 .. _Robot Framework: http://robotframework.org
 .. _Robot Framework Foundation: http://robotframework.org/foundation
@@ -176,7 +182,7 @@ block is highly recommended but not mandatory.
 In the following example keywords `Some keyword` and `Another keyword`
 are executed if `${rc}` is greater than zero:
 
-.. sourcecode:: robotframework
+.. code:: robotframework
 
     *** Test Cases ***
     Example
@@ -204,7 +210,7 @@ not true.
 In this example `Some keyword` is executed if `${rc}` is greater than
 zero and `Another keyword` is executed otherwise:
 
-.. sourcecode:: robotframework
+.. code:: robotframework
 
     *** Test Cases ***
     Example
@@ -231,7 +237,7 @@ ELSE IF branches and it is executed if all conditions are false.
 In the following example different keyword is executed depending on the value
 of the `${direction}` variable:
 
-.. sourcecode:: robotframework
+.. code:: robotframework
 
     *** Test Cases ***
     Example

@@ -38,14 +38,7 @@ Misspelled
 Misspelled Env Var
     Check Test Case    ${TESTNAME}
 
-Misspelled Java System Property
-    [Tags]    require-jython
-    Check Test Case    ${TESTNAME}
-
 Misspelled Env Var With Internal Variables
-    Check Test Case    ${TESTNAME}
-
-Misspelled List Variable With Period
     Check Test Case    ${TESTNAME}
 
 Misspelled Extended Variable Parent

@@ -43,7 +43,7 @@ Failure When Setting Variables
     No Operation
     [Teardown]    Failure when setting variables
 
-Failure In For Loop
+Failure In FOR Loop
     [Documentation]    FAIL    Teardown failed:
     ...    Several failures occurred:
     ...
@@ -57,7 +57,7 @@ Failure In For Loop
     ...
     ...    ${SUITE TEARDOWN FAILED}
     No Operation
-    [Teardown]    Failures In For Loop
+    [Teardown]    Failures In FOR Loop
 
 Execution Continues After Test Timeout
     [Documentation]    FAIL    Teardown failed:
@@ -75,6 +75,26 @@ Execution Stops After Keyword Timeout
     ...    ${SUITE TEARDOWN FAILED}
     No Operation
     [Teardown]    Keyword Timeout Occurs
+
+Execution continues if executed keyword fails for keyword timeout
+    [Documentation]    FAIL    Teardown failed:
+    ...    Several failures occurred:
+    ...
+    ...    1) Keyword timeout 42 milliseconds exceeded.
+    ...
+    ...    2) This should be executed
+    ...
+    ...    ${SUITE TEARDOWN FAILED}
+    No Operation
+    [Teardown]    Keyword Timeout Occurs In Executed Keyword
+
+Execution stops after keyword timeout if keyword uses WUKS
+    [Documentation]    FAIL    Teardown failed:
+    ...    Keyword timeout 100 milliseconds exceeded.
+    ...
+    ...    ${SUITE TEARDOWN FAILED}
+    No Operation
+    [Teardown]    Keyword Using WUKS
 
 Execution Continues If Variable Does Not Exist
     [Documentation]    FAIL    Teardown failed:
@@ -104,7 +124,7 @@ Execution Continues After Keyword Errors
 
 Execution Stops After Syntax Error
     [Documentation]    FAIL    Teardown failed:
-    ...    Keyword name cannot be empty.
+    ...    IF must have closing END.
     ...
     ...    ${SUITE TEARDOWN FAILED}
     No Operation
@@ -138,7 +158,7 @@ Failure when setting variables
     ${ret} =    Fail    Return values is None
     Should Be Equal    ${ret}    ${None}
 
-Failures In For Loop
+Failures In FOR Loop
     FOR    ${animal}    IN    cat    dog
         Fail    ${animal}
         Fail    again
@@ -153,6 +173,20 @@ Keyword Timeout Occurs
     Sleep    1 s
     Fail    This should not be executed
 
+Keyword Timeout Occurs In Executed Keyword
+    Keyword Timeout Occurs
+    Fail    This should be executed
+
+Keyword Using WUKS
+    [Timeout]    100ms
+    Wait Until Keyword Succeeds    4x    1s
+    ...    Fail Slowly
+    Fail    This should not be executed
+
+Fail Slowly
+    Sleep    0.51ms
+    Fail    Failing!
+
 Missing Variables
     Log    ${this var does not exist}
     Log    This should be executed
@@ -166,8 +200,12 @@ Keyword Errors
     Keyword In Both Resources
 
 Syntax Errors
-    ${invalid}
+    Invalid IF
     Not executed
+
+Invalid IF
+    IF    True
+        Not executed
 
 Keyword With Fatal Error
     Fatal Error    The End

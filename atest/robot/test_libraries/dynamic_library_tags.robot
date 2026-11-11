@@ -14,12 +14,8 @@ Tags from get_keyword_tags
 Tags both from doc and get_keyword_tags
     0    1    2    3    4
 
-Tags from Java getKeywordTags
-    [Tags]    require-jython
-    0    Java No Arg    tag
-
 *** Keywords ***
 Keyword Tags Should Be
     [Arguments]    ${index}    @{tags}
     ${tc} =    Check Test Case    ${TESTNAME}
-    Lists Should Be Equal    ${tc.kws[${index}].tags}    ${tags}
+    Lists Should Be Equal    ${tc[${index}].tags}    ${tags}

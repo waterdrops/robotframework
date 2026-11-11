@@ -1,49 +1,128 @@
 *** Settings ***
 Suite Setup       Run Tests    ${EMPTY}    running/if/invalid_if.robot
+Test Template     Branch statuses should be
 Resource          atest_resource.robot
 
 *** Test Cases ***
-If without condition
-  Check Test Case    ${TESTNAME}
+IF without condition
+    FAIL
 
-If with many conditions
-  Check Test Case    ${TESTNAME}
+IF without condition with ELSE
+    FAIL    NOT RUN
 
-If without end
-  Check Test Case    ${TESTNAME}
+IF with invalid condition
+    FAIL
+
+IF with invalid condition with ELSE
+    FAIL    NOT RUN
+
+IF condition with non-existing ${variable}
+    FAIL    NOT RUN
+
+IF condition with non-existing $variable
+    FAIL    NOT RUN
+
+ELSE IF with invalid condition
+    NOT RUN    NOT RUN    FAIL    NOT RUN    NOT RUN
+
+Recommend $var syntax if invalid condition contains ${var}
+    FAIL    index=1
+
+$var recommendation with multiple variables
+    FAIL    index=1
+
+Remove quotes around variable in $var recommendation
+    FAIL    index=2
+
+IF without END
+    FAIL
 
 Invalid END
-  Check Test Case    ${TESTNAME}
+    FAIL
 
-If with wrong case
-  Check Test Case    ${TESTNAME}
+IF with wrong case
+    [Template]    NONE
+    Check Test Case    ${TEST NAME}
 
-Else if without condition
-  Check Test Case    ${TESTNAME}
+ELSE IF without condition
+    FAIL    NOT RUN    NOT RUN
 
-Else if with multiple conditions
-  Check Test Case    ${TESTNAME}
+ELSE IF with multiple conditions
+    [Template]    NONE
+    ${tc} =    Branch statuses should be    FAIL    NOT RUN    NOT RUN
+    Should Be Equal    ${tc[0, 1].condition}    \${False}, ooops, \${True}
 
-Else with a condition
-  Check Test Case    ${TESTNAME}
+ELSE with condition
+    FAIL    NOT RUN
 
-If with empty if
-  Check Test Case    ${TESTNAME}
+IF with empty body
+    FAIL
 
-If with empty else
-  Check Test Case    ${TESTNAME}
+ELSE with empty body
+    FAIL    NOT RUN
 
-If with empty else_if
-  Check Test Case    ${TESTNAME}
+ELSE IF with empty body
+    FAIL    NOT RUN    NOT RUN
 
-If with else after else
-  Check Test Case    ${TESTNAME}
+ELSE after ELSE
+    FAIL    NOT RUN    NOT RUN
 
-If with else if after else
-  Check Test Case    ${TESTNAME}
+ELSE IF after ELSE
+    FAIL    NOT RUN    NOT RUN
 
-If for else if parsing
-  Check Test Case    ${TESTNAME}
+Dangling ELSE
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE inside FOR
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE inside WHILE
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE IF
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE IF inside FOR
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE IF inside WHILE
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Dangling ELSE IF inside TRY
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Invalid IF inside FOR
+    FAIL
 
 Multiple errors
-  Check Test Case    ${TESTNAME}
+    FAIL    NOT RUN    NOT RUN    NOT RUN    NOT RUN
+
+Invalid data causes syntax error
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Invalid condition causes normal error
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+Non-existing variable in condition causes normal error
+    [Template]    Check Test Case
+    ${TEST NAME}
+
+*** Keywords ***
+Branch statuses should be
+    [Arguments]    @{statuses}    ${index}=0
+    ${tc} =    Check Test Case    ${TESTNAME}
+    ${if} =    Set Variable    ${tc.body}[${index}]
+    Should Be Equal    ${if.status}    FAIL
+    FOR    ${branch}    ${status}    IN ZIP    ${if.body}    ${statuses}    mode=STRICT
+        Should Be Equal    ${branch.status}    ${status}
+    END
+    RETURN    ${tc}
